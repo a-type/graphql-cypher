@@ -20,6 +20,11 @@ type Post {
   body: String!
 }
 
+type UserSettings {
+  id: ID!
+  homepage: String!
+}
+
 type User {
   id: ID!
   name: String!
@@ -29,38 +34,49 @@ type User {
     pagination: Pagination = { first: 10, offset: 0 }
     filter: PostFilter
   ): [Post!]!
+    @cypher(
+      statements: [
+        {
+          when: "$args.filter"
+          statement: """
+          MATCH (parent)-[:AUTHOR_OF]->(post:Post)
+          WHERE post.title =~ $args.filter.titleMatch
+          RETURN post
+          SKIP $args.pagination.offset
+          LIMIT $args.pagination.first
+          """
+        }
+        {
+          statement: """
+          MATCH (parent)-[:AUTHOR_OF]->(post:Post)
+          RETURN post
+          SKIP $args.pagination.offset
+          LIMIT $args.pagination.first
+          """
+        }
+      ]
+    )
+
+  settings: UserSettings! # not resolved by cypher
 }
 
 type Query {
   user(id: ID!): User
+    @cypher(
+      statement: """
+      MATCH (user:User {id: $args.id}) RETURN user
+      """
+    )
 }
 ```
 
-```ts
-import { autoResolver, cypherResolver } from 'graphql-cypher';
+## Execution phases
 
-const resolvers = {
-  Query: {
-    // auto-generates: MATCH (user:User {id: $args.id}) RETURN user {...selectionFields}
-    // where selectionFields are gathered based on the query selection
-    user: autoResolver,
-  },
-  User: {
-    posts: cypherResolver`
-      MATCH (parent)-[:AUTHOR_OF]->(post:Post)
-      ${(_parent, args) =>
-        !!args.filter
-          ? `
-        WHERE post.title =~ $args.filter.titleMatch
-        `
-          : null}
-      RETURN post
-      SKIP $args.pagination.offset
-      LIMIT $args.pagination.first
-    `,
-  },
-};
-```
+This middleware runs several phases of operations during execution:
+
+1. **Pre-resolve:** Scan operation selection set for fields which are resolved from Cypher queries. Group contiguous fields into discrete queries to prepare for execution.
+2. **Pre-resolve:** Inject the generated queries, keyed on a field path, into the context of the operation.
+3. **Resolve:** Traverse the resolver tree. If a field is annotated with a `@cypher` directive, check for a matching query based on its path. If such a query exists, execute it and return the result through the resolver. Otherwise, run the provided resolver as usual.
 
 ---
 

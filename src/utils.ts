@@ -5,8 +5,18 @@ import {
   ResponsePath,
   GraphQLObjectType,
   GraphQLInterfaceType,
+  SelectionNode,
+  FieldNode,
+  SelectionSetNode,
+  GraphQLSchema,
+  ArgumentNode,
+  ObjectFieldNode,
+  ValueNode,
+  NameNode,
+  ListValueNode,
+  ObjectValueNode,
 } from 'graphql';
-import { CypherPlaceholder, ExternalPlaceholder } from 'types';
+import { CypherConditionalStatement } from 'types';
 
 export function isGraphqlScalarType(
   type: GraphQLNamedType
@@ -37,45 +47,111 @@ export function getFieldPath(info: GraphQLResolveInfo) {
   return path;
 }
 
-// ultimately we end up with a resolved value like this...
-/**
- * {
- *   _isCypher: true,
- *   _cypher: "MATCH (user:User {id:$args.id}) RETURN user",
- *
- *   // a field resolved from a non-cypher source becomes an external placeholder
- *   someExternalField: '{
- *     _isCypher: false,
- *     _resolver: [Function],
- *     _args: { foo: 'bar' },
- *     _info: { ... },
- *   },
- *   // another cypher field
- *   posts: {
- *     _isCypher: true,
- *     _cypher: "MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post"
- *   }
- * }
- */
+export const extractArgumentStringValue = (
+  argument?: ArgumentNode | null
+): string | null => {
+  if (!argument) {
+    return null;
+  }
 
-/**
- * Creates a standard placeholder in the returned payload for a particular cypher field resolver.
- * Mutates the context to bookmark the place of this placeholder for easier resolution later
- */
-export const createPlaceholder = (cypher: string): CypherPlaceholder => {
-  return {
-    __graphqlCypher: {
-      isCypher: true,
-      cypher,
-    },
-  };
+  const value = argument.value;
+  if (value.kind !== 'StringValue') {
+    return null;
+  }
+  return value.value;
 };
 
-export const isCypherPlaceholder = (
-  placeholder: CypherPlaceholder | ExternalPlaceholder | null
-): placeholder is CypherPlaceholder =>
-  !!placeholder && placeholder.__graphqlCypher.isCypher;
-export const isExternalPlaceholder = (
-  placeholder: CypherPlaceholder | ExternalPlaceholder | null
-): placeholder is ExternalPlaceholder =>
-  !!placeholder && !placeholder.__graphqlCypher.isCypher;
+export const getCypherStatementsFromDirective = (
+  schemaType: GraphQLObjectType,
+  fieldName: string
+): CypherConditionalStatement[] => {
+  const field = schemaType.getFields()[fieldName];
+  if (!field || !field.astNode) {
+    return [];
+  }
+
+  const cypherDirective = field.astNode.directives
+    ? field.astNode.directives.find(
+        directive => directive.name.value === 'cypher'
+      )
+    : null;
+
+  if (!cypherDirective || !cypherDirective.arguments) {
+    return [];
+  }
+
+  const statementArg = cypherDirective.arguments.find(
+    arg => arg.name.value === 'statement'
+  );
+  if (statementArg) {
+    return [
+      {
+        statement: extractArgumentStringValue(statementArg),
+      },
+    ];
+  }
+
+  const statementsArg = cypherDirective.arguments.find(
+    arg => arg.name.value === 'statements'
+  );
+
+  if (!statementsArg) {
+    throw new Error(
+      `@cypher directive on '${fieldName}' must specify either 'statement' or 'statements' argument`
+    );
+  }
+
+  return valueNodeToValue(statementsArg.value, {});
+};
+
+export const isExternal = (info: GraphQLResolveInfo) => {
+  const type = info.parentType.name;
+  const field = info.fieldName;
+
+  const schemaType = info.schema.getType(type);
+  if (!schemaType || !schemaType.astNode) {
+    throw new Error('Schema type was not found for ' + type);
+  }
+
+  if (isGraphqlScalarType(schemaType)) {
+    return true;
+  }
+
+  const fieldNode = (schemaType as GraphQLObjectType).getFields()[field];
+
+  return (
+    fieldNode.astNode &&
+    fieldNode.astNode.directives &&
+    !fieldNode.astNode.directives.some(
+      directive => directive.name.value === 'cypher'
+    )
+  );
+};
+
+export const valueNodeToValue = (
+  valueNode: ValueNode,
+  variables: { [variableName: string]: any }
+) => {
+  if (valueNode.kind === 'Variable') {
+    return variables[valueNode.name.value];
+  } else if (valueNode.kind === 'NullValue') {
+    return null;
+  } else if (valueNode.kind === 'ObjectValue') {
+    return argFieldsToValues({}, valueNode.fields, variables);
+  } else if (valueNode.kind === 'ListValue') {
+    return valueNode.values.map(value => valueNodeToValue(value, variables));
+  } else {
+    return valueNode.value;
+  }
+};
+
+export const argFieldsToValues = (
+  providedValues: { [key: string]: any },
+  fields: readonly { value: ValueNode; name: NameNode }[],
+  variables: { [variableName: string]: any }
+) => {
+  return fields.reduce((acc, fieldNode) => {
+    acc[fieldNode.name.value] = valueNodeToValue(fieldNode.value, variables);
+    return acc;
+  }, providedValues);
+};

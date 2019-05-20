@@ -1,4 +1,8 @@
-import { GraphQLFieldResolver, GraphQLResolveInfo } from 'graphql';
+import {
+  GraphQLFieldResolver,
+  GraphQLResolveInfo,
+  GraphQLSchema,
+} from 'graphql';
 import { v1 } from 'neo4j-driver';
 
 export type GenericResolver = GraphQLFieldResolver<
@@ -6,22 +10,6 @@ export type GenericResolver = GraphQLFieldResolver<
   any,
   { [key: string]: any }
 >;
-
-export type CypherPlaceholder = {
-  __graphqlCypher: {
-    isCypher: true;
-    cypher: string;
-  };
-};
-
-export type ExternalPlaceholder = {
-  __graphqlCypher: {
-    isCypher: false;
-    resolver: GenericResolver;
-    args: { [key: string]: any };
-    info: GraphQLResolveInfo;
-  };
-};
 
 export type CypherQuery = {
   cypher: string;
@@ -31,12 +19,16 @@ export type CypherQuery = {
   };
 };
 
+export type CypherConditionalStatement = {
+  statement: string | null;
+  when?: string | null;
+};
+
 export type CypherQueryFieldMap = Map<string[], CypherQuery>;
 
 export type ExtractQueryTraversalInfo = {
-  parent: CypherPlaceholder | ExternalPlaceholder | null;
-  fieldName: string;
   path: string[];
+  schema: GraphQLSchema;
 };
 
 export type ResolveTraversalInfo = {
