@@ -20,8 +20,13 @@ export type CypherQuery = {
 };
 
 export type CypherConditionalStatement = {
-  statement: string | null;
+  statement: string;
   when?: string | null;
+};
+
+export type CypherDirectiveArgs = {
+  statement?: string;
+  statements?: CypherConditionalStatement[];
 };
 
 export type CypherQueryFieldMap = Map<string[], CypherQuery>;

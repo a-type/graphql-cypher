@@ -15,6 +15,14 @@ import {
   NameNode,
   ListValueNode,
   ObjectValueNode,
+  FragmentDefinitionNode,
+  InlineFragmentNode,
+  FragmentSpreadNode,
+  GraphQLField,
+  GraphQLOutputType,
+  GraphQLNonNull,
+  GraphQLEnumType,
+  GraphQLList,
 } from 'graphql';
 import { CypherConditionalStatement } from 'types';
 
@@ -84,9 +92,13 @@ export const getCypherStatementsFromDirective = (
     arg => arg.name.value === 'statement'
   );
   if (statementArg) {
+    const statement = extractArgumentStringValue(statementArg);
+    if (!statement) {
+      throw new Error(`@cypher directive 'statement' arg must be a string.`);
+    }
     return [
       {
-        statement: extractArgumentStringValue(statementArg),
+        statement,
       },
     ];
   }
@@ -97,7 +109,9 @@ export const getCypherStatementsFromDirective = (
 
   if (!statementsArg) {
     throw new Error(
-      `@cypher directive on '${fieldName}' must specify either 'statement' or 'statements' argument`
+      `@cypher directive on '${
+        field.name
+      }' must specify either 'statement' or 'statements' argument`
     );
   }
 
@@ -154,4 +168,70 @@ export const argFieldsToValues = (
     acc[fieldNode.name.value] = valueNodeToValue(fieldNode.value, variables);
     return acc;
   }, providedValues);
+};
+
+export const getFragmentSelection = (
+  fragmentNode: InlineFragmentNode | FragmentSpreadNode,
+  fragments: { [key: string]: FragmentDefinitionNode }
+): SelectionSetNode => {
+  if (fragmentNode.kind === 'InlineFragment') {
+    return fragmentNode.selectionSet;
+  } else {
+    const fragment = fragments[fragmentNode.name.value];
+    if (!fragment) {
+      throw new Error(
+        `Unknown fragment "${
+          fragmentNode.name.value
+        } used; cannot extract fields`
+      );
+    }
+    return fragment.selectionSet;
+  }
+};
+
+/**
+ * Converts a selection set into a list of field names.
+ * @param existingFieldNames
+ * @param selectionSet
+ * @param fragments
+ */
+export const selectionSetToFieldNames = (
+  existingFieldNames: string[],
+  selectionSet: SelectionSetNode,
+  fragments: { [key: string]: FragmentDefinitionNode }
+): string[] => {
+  // shallow iteration over each field in the selection set, adding its name
+  // to the list
+  return selectionSet.selections.reduce((names, selection) => {
+    // flatten fragments by recursion
+    if (
+      selection.kind === 'InlineFragment' ||
+      selection.kind === 'FragmentSpread'
+    ) {
+      return selectionSetToFieldNames(
+        names,
+        getFragmentSelection(selection, fragments),
+        fragments
+      );
+    } else {
+      // add field name to list
+      return [...names, selection.name.value];
+    }
+  }, existingFieldNames);
+};
+
+export const extractObjectType = (
+  type: GraphQLOutputType
+): GraphQLObjectType<any, any, any> | null => {
+  if (type instanceof GraphQLObjectType) {
+    return type;
+  }
+
+  // TODO: Interface / Union
+
+  if (type instanceof GraphQLNonNull || type instanceof GraphQLList) {
+    return extractObjectType(type.ofType);
+  }
+
+  return null;
 };
