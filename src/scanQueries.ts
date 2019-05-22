@@ -18,6 +18,7 @@ import {
   isCypherSkip,
   getNameOrAlias,
   getArgumentsPlusDefaults,
+  isListType,
 } from './utils';
 import { path } from 'ramda';
 import { getFieldDef } from 'graphql/execution/execute';
@@ -115,6 +116,7 @@ const extractQueriesFromField = ({
 
     currentQuery = {
       cypher,
+      returnsList: isListType(schemaFieldDef.type),
       fields: [],
       params: field.arguments ? ['args'] : [],
       args: argValues,

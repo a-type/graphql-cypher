@@ -17,6 +17,8 @@ import {
   GraphQLOutputType,
   GraphQLNonNull,
   GraphQLList,
+  isListType as graphQlIsListType,
+  isNonNullType as graphQlIsNonNullType,
 } from 'graphql';
 import { CypherConditionalStatement } from './types';
 
@@ -302,4 +304,31 @@ export const getArgumentsPlusDefaults = (
     ...defaults,
     ...argFieldsToValues({}, field.arguments || [], variables),
   };
+};
+
+/** creates an 'open' promise which can be resolved externally */
+export const createOpenPromise = () => {
+  let resolve: (data: any) => void = () => {};
+  let reject: (error: Error) => void = () => {};
+
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return {
+    promise,
+    resolve,
+    reject,
+  };
+};
+
+export const isListType = (type: GraphQLOutputType) => {
+  if (graphQlIsListType(type)) {
+    return true;
+  }
+  if (graphQlIsNonNullType(type)) {
+    return isListType(type.ofType);
+  }
+  return false;
 };

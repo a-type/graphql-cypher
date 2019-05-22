@@ -96,13 +96,19 @@ const buildFields = (
   );
 };
 
-export const buildQuery = (fieldName: string, query: CypherQuery) => {
+export const buildCypherQuery = (fieldName: string, query: CypherQuery) => {
   const safeName = safeVar(fieldName);
   const prefix = safeName + '_';
 
+  // queries receive a parent variable representing the object that is
+  // the parent to the resolver that runs them. This is only relevant to the
+  // first-level query; all other queries will receive their parents natively
+  // within the Cypher context
+  const parentVariableName = '$parent';
+
   return (
     `WITH ` +
-    buildSubqueryClause(query, prefix) +
+    buildSubqueryClause(query, prefix, parentVariableName) +
     ` AS x UNWIND x AS \`${safeName}\` ` +
     `RETURN \`${safeName}\` ` +
     buildFields(prefix, safeName, query) +
@@ -110,10 +116,82 @@ export const buildQuery = (fieldName: string, query: CypherQuery) => {
   );
 };
 
-export const executeCypherQuery = (
-  fieldName: string,
-  query: CypherQuery,
-  driver: v1.Driver
-) => {
-  const cypher = buildQuery(fieldName, query);
+/**
+ * recursively flattens and builds a set of arg object variables for a query
+ * and all its sub-queries
+ */
+const buildPrefixedFieldArgVariables = (
+  prefix: string,
+  query: CypherQuery
+) => ({
+  [`${prefix}args`]: query.args,
+  ...query.fields
+    .filter(fieldName => !!query.fieldQueries[fieldName])
+    .reduce(
+      (args, fieldName) =>
+        buildPrefixedFieldArgVariables(
+          prefix + fieldName + '_',
+          query.fieldQueries[fieldName]
+        ),
+      {}
+    ),
+});
+
+export const buildPrefixedVariables = ({
+  fieldName,
+  query,
+  parent,
+  contextValues,
+}: {
+  fieldName: string;
+  query: CypherQuery;
+  parent?: any;
+  contextValues?: any;
+}) => {
+  const safeName = safeVar(fieldName);
+  const prefix = safeName + '_';
+
+  return {
+    // passing the parent as a variable lets us cross the graphql -> graphdb boundary
+    // and give queries access to their parent objects from our GraphQL context
+    parent,
+    // the user may supply values in their context which they always want passed to queries
+    context: contextValues,
+
+    ...buildPrefixedFieldArgVariables(prefix, query),
+  };
+};
+
+export const executeCypherQuery = async ({
+  fieldName,
+  cypher,
+  variables,
+  session,
+  write = false,
+  isList,
+}: {
+  fieldName: string;
+  cypher: string;
+  variables: { [name: string]: any };
+  session: v1.Session;
+  isList: boolean;
+  write?: boolean;
+}): Promise<any> => {
+  const transaction = write
+    ? session.writeTransaction
+    : session.readTransaction;
+
+  const data = await transaction(async tx => {
+    const result = await tx.run(cypher, variables);
+    if (result.records && result.records.length) {
+      if (isList) {
+        return result.records.map(record => record.get(fieldName));
+      } else {
+        return result.records[0].get('fieldName');
+      }
+    }
+    return null;
+  });
+
+  return data;
 };

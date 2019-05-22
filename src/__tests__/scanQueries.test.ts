@@ -48,6 +48,7 @@ describe('scanning queries from an operation', () => {
         fields: ['name', 'email'],
         params: ['args'],
         args: { id: 'foo' },
+        returnsList: false,
         fieldQueries: {},
       },
     });
@@ -75,6 +76,7 @@ describe('scanning queries from an operation', () => {
         fields: ['id', 'name', 'posts'],
         params: ['args'],
         args: { id: 'foo' },
+        returnsList: false,
         fieldQueries: {
           posts: {
             cypher: `MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
@@ -82,6 +84,7 @@ RETURN post
 SKIP $args.pagination.offset
 LIMIT $args.pagination.first`,
             params: ['args'],
+            returnsList: true,
             args: {
               pagination: {
                 first: 10,
@@ -116,6 +119,7 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id'],
         params: ['args'],
+        returnsList: false,
         args: { id: 'foo' },
         fieldQueries: {},
       },
@@ -148,6 +152,7 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id', 'posts'],
         params: ['args'],
+        returnsList: false,
         args: {
           id: 'foo',
         },
@@ -158,6 +163,7 @@ RETURN post
 SKIP $args.pagination.offset
 LIMIT $args.pagination.first`,
             params: ['args'],
+            returnsList: true,
             args: {
               pagination: {
                 first: 10,
@@ -172,6 +178,7 @@ LIMIT $args.pagination.first`,
       'user,settings,user': {
         cypher: 'MATCH (user:User {id: $parent.userId}) RETURN user',
         fields: ['id', 'name'],
+        returnsList: false,
         params: ['args'],
         args: {},
         fieldQueries: {},
@@ -200,6 +207,7 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id', 'name', 'posts'],
         params: ['args'],
+        returnsList: false,
         args: {
           id: 'foo',
         },
@@ -211,6 +219,7 @@ RETURN post
 SKIP $args.pagination.offset
 LIMIT $args.pagination.first`,
             fields: ['id', 'title'],
+            returnsList: true,
             args: {
               filter: {
                 titleMatch: 'bar',
@@ -251,12 +260,14 @@ LIMIT $args.pagination.first`,
         fields: ['name', 'email'],
         params: ['args'],
         args: { id: 'foo' },
+        returnsList: false,
         fieldQueries: {},
       },
       'alias,settings,alias2': {
         cypher: 'MATCH (user:User {id: $parent.userId}) RETURN user',
         fields: ['id'],
         params: ['args'],
+        returnsList: false,
         args: {},
         fieldQueries: {},
       },

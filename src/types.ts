@@ -13,6 +13,7 @@ export type GenericResolver = GraphQLFieldResolver<
 
 export type CypherQuery = {
   cypher: string;
+  returnsList: boolean;
   params: string[];
   args: {
     [name: string]: any;
@@ -50,8 +51,17 @@ export type ResolveTraversalInfo = {
 
 export type AugmentedContext = { [key: string]: any } & {
   __graphqlCypher: {
+    session: v1.Session;
+    isWrite: boolean;
     cypherQueries: CypherQueryFieldMap;
+    parentQuery: CypherQuery | null;
+    resultCache: {
+      [fieldName: string]: any;
+    };
   };
 
   neo4jDriver: v1.Driver;
+  cypherContext?: any;
+
+  runCypher?: () => any;
 };
