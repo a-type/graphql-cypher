@@ -1,5 +1,18 @@
 import { graphql } from 'graphql';
-import schema from './fixtures/schema';
+import typeDefs from './fixtures/typeDefs';
+import { middleware } from '..';
+import { makeExecutableSchema } from 'graphql-tools';
+import { applyMiddleware } from 'graphql-middleware';
+
+const resolvers = {};
+
+const schema = applyMiddleware(
+  makeExecutableSchema({
+    typeDefs,
+    resolvers,
+  }),
+  middleware
+);
 
 describe('the library', () => {
   test('works', async () => {

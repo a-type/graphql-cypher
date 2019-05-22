@@ -44,5 +44,9 @@
   },
   "dependencies": {
     "ramda": "^0.26.1"
+  },
+  "jest": {
+    "testMatch": null,
+    "testRegex": "\\.test\\.ts$"
   }
 }

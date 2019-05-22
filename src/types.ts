@@ -13,6 +13,7 @@ export type GenericResolver = GraphQLFieldResolver<
 
 export type CypherQuery = {
   cypher: string;
+  params: string[];
   fields: string[];
   fieldQueries: {
     [fieldName: string]: CypherQuery;
@@ -29,7 +30,7 @@ export type CypherDirectiveArgs = {
   statements?: CypherConditionalStatement[];
 };
 
-export type CypherQueryFieldMap = Map<string[], CypherQuery>;
+export type CypherQueryFieldMap = { [path: string]: CypherQuery };
 
 export type ExtractQueryTraversalInfo = {
   path: string[];
@@ -42,4 +43,12 @@ export type ResolveTraversalInfo = {
   path: string[];
   queries: CypherQueryFieldMap;
   transaction: v1.Transaction;
+};
+
+export type AugmentedContext = { [key: string]: any } & {
+  __graphqlCypher: {
+    cypherQueries: CypherQueryFieldMap;
+  };
+
+  neo4jDriver: v1.Driver;
 };

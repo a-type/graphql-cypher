@@ -1,13 +1,10 @@
-import { middleware } from '../../src';
-import { makeExecutableSchema } from 'graphql-tools';
-import { applyMiddleware } from 'graphql-middleware';
-
-export const typeDefs = `
+export default `
 input CypherConditionalStatement { statement: String!, when: String }
 directive @cypher(
   statement: String
   statements: [CypherConditionalStatement!]
 ) on FIELD_DEFINITION
+directive @cypherSkip on FIELD_DEFINITION
 
 input Pagination {
   first: Int
@@ -27,6 +24,12 @@ type Post {
 type UserSettings {
   id: ID!
   homepage: String!
+  user: User!
+    @cypher(
+      statement: """
+      MATCH (user:User {id: $parent.userId}) RETURN user
+      """
+    )
 }
 
 type User {
@@ -42,7 +45,7 @@ type User {
       {
         when: "$args.filter"
         statement: """
-          MATCH (parent)-[:AUTHOR_OF]->(post:Post)
+          MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
           WHERE post.title =~ $args.filter.titleMatch
           RETURN post
           SKIP $args.pagination.offset
@@ -51,7 +54,7 @@ type User {
       },
       {
         statement: """
-          MATCH (parent)-[:AUTHOR_OF]->(post:Post)
+          MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
           RETURN post
           SKIP $args.pagination.offset
           LIMIT $args.pagination.first
@@ -59,7 +62,7 @@ type User {
       }
     ])
 
-  settings: UserSettings! # not resolved by cypher
+  settings: UserSettings! @cypherSkip
 }
 
 type Query {
@@ -69,17 +72,14 @@ type Query {
       MATCH (user:User {id: $args.id}) RETURN user
       """
     )
+
+  post(id: ID!): Post
+    @cypher(
+      statement: """
+      MATCH (post:Post {id: $args.id}) RETURN post
+      """
+    )
+
+  userSettings(id: ID!): UserSettings
 }
 `;
-
-export const resolvers = {};
-
-const schema = applyMiddleware(
-  makeExecutableSchema({
-    typeDefs,
-    resolvers,
-  }),
-  middleware
-);
-
-export default schema;

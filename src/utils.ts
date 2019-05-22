@@ -5,26 +5,20 @@ import {
   ResponsePath,
   GraphQLObjectType,
   GraphQLInterfaceType,
-  SelectionNode,
   FieldNode,
   SelectionSetNode,
   GraphQLSchema,
   ArgumentNode,
-  ObjectFieldNode,
   ValueNode,
   NameNode,
-  ListValueNode,
-  ObjectValueNode,
   FragmentDefinitionNode,
   InlineFragmentNode,
   FragmentSpreadNode,
-  GraphQLField,
   GraphQLOutputType,
   GraphQLNonNull,
-  GraphQLEnumType,
   GraphQLList,
 } from 'graphql';
-import { CypherConditionalStatement } from 'types';
+import { CypherConditionalStatement } from './types';
 
 export function isGraphqlScalarType(
   type: GraphQLNamedType
@@ -98,7 +92,7 @@ export const getCypherStatementsFromDirective = (
     }
     return [
       {
-        statement,
+        statement: statement.trim(),
       },
     ];
   }
@@ -115,7 +109,27 @@ export const getCypherStatementsFromDirective = (
     );
   }
 
-  return valueNodeToValue(statementsArg.value, {});
+  return valueNodeToValue(statementsArg.value, {}).map(item => ({
+    ...item,
+    statement: item.statement.trim(),
+  }));
+};
+
+export const isCypherSkip = (
+  schemaType: GraphQLObjectType,
+  fieldName: string
+) => {
+  const field = schemaType.getFields()[fieldName];
+  if (!field || !field.astNode) {
+    return false;
+  }
+
+  return (
+    field.astNode.directives &&
+    field.astNode.directives.some(
+      directive => directive.name.value === 'cypherSkip'
+    )
+  );
 };
 
 export const isExternal = (info: GraphQLResolveInfo) => {
@@ -234,4 +248,20 @@ export const extractObjectType = (
   }
 
   return null;
+};
+
+export const getNameOrAlias = (field: FieldNode) =>
+  field.alias ? field.alias.value : field.name.value;
+
+export const isRootField = (
+  parentType: GraphQLObjectType,
+  schema: GraphQLSchema
+) => {
+  const queryType = schema.getQueryType();
+  const mutationType = schema.getMutationType();
+
+  return [
+    queryType && queryType.name,
+    mutationType && mutationType.name,
+  ].includes(parentType.name);
 };

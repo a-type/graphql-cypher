@@ -2,33 +2,24 @@ import {
   CypherQueryFieldMap,
   CypherConditionalStatement,
   CypherQuery,
-} from 'types';
+} from './types';
 import {
   GraphQLResolveInfo,
   GraphQLObjectType,
   FieldNode,
   FragmentDefinitionNode,
   GraphQLSchema,
+  SelectionSetNode,
 } from 'graphql';
 import {
   getCypherStatementsFromDirective,
   argFieldsToValues,
-  selectionSetToFieldNames,
   extractObjectType,
-} from 'utils';
+  isCypherSkip,
+  getNameOrAlias,
+} from './utils';
 import { path } from 'ramda';
 import { getFieldDef } from 'graphql/execution/execute';
-
-type ExtractSelectionsParams = {
-  queries: CypherQueryFieldMap;
-  parentType: GraphQLObjectType;
-  field: FieldNode;
-  variableValues: { [name: string]: any };
-  schema: GraphQLSchema;
-  path: string[];
-  fragments: { [key: string]: FragmentDefinitionNode };
-  activeQuery: CypherQuery | undefined;
-};
 
 const getMatchingConditionalCypher = (
   cypherDirectives: CypherConditionalStatement[],
@@ -50,7 +41,7 @@ const getMatchingConditionalCypher = (
         return segment;
       });
 
-    const pathValue = path(pathSegments, args);
+    const pathValue = path(pathSegments, { args });
 
     if (!!pathValue) {
       return directive;
@@ -62,7 +53,18 @@ const getMatchingConditionalCypher = (
   );
 };
 
-const extractQueriesFromSelections = ({
+type ExtractFromFieldParams = {
+  queries: CypherQueryFieldMap;
+  parentType: GraphQLObjectType;
+  field: FieldNode;
+  variableValues: { [name: string]: any };
+  schema: GraphQLSchema;
+  path: string[];
+  fragments: { [key: string]: FragmentDefinitionNode };
+  activeQuery: CypherQuery | undefined;
+};
+
+const extractQueriesFromField = ({
   queries,
   parentType,
   field,
@@ -71,13 +73,29 @@ const extractQueriesFromSelections = ({
   path,
   fragments,
   activeQuery,
-}: ExtractSelectionsParams): CypherQueryFieldMap => {
+}: ExtractFromFieldParams): CypherQueryFieldMap => {
+  const fieldName = field.name.value;
+
+  // add field name to active query if not @cypherSkip
+  if (activeQuery && !isCypherSkip(parentType, fieldName)) {
+    activeQuery.fields.push(fieldName);
+  }
+
+  const schemaFieldDef = getFieldDef(schema, parentType, fieldName);
+  if (!schemaFieldDef) {
+    throw new Error(
+      `Invalid state, there's no field definition for field "${fieldName}" on type "${
+        parentType.name
+      }"`
+    );
+  }
+
   const cypherDirectives = getCypherStatementsFromDirective(
     parentType,
-    field.name.value
+    fieldName
   );
 
-  let currentQuery: CypherQuery;
+  let currentQuery: CypherQuery | undefined = undefined;
 
   // any field with a @cypher directive has something to add to the query
   if (cypherDirectives.length) {
@@ -90,21 +108,20 @@ const extractQueriesFromSelections = ({
     const { statement: cypher } = getMatchingConditionalCypher(
       cypherDirectives,
       argValues,
-      field.name.value
+      fieldName
     );
 
     currentQuery = {
       cypher,
-      fields: field.selectionSet
-        ? selectionSetToFieldNames([], field.selectionSet, fragments)
-        : [],
+      fields: [],
+      params: field.arguments ? ['args'] : [],
       fieldQueries: {},
     };
 
     if (activeQuery) {
-      activeQuery.fieldQueries[field.name.value] = currentQuery;
+      activeQuery.fieldQueries[fieldName] = currentQuery;
     } else {
-      queries.set(path, currentQuery);
+      queries[path.join(',')] = currentQuery;
     }
   }
 
@@ -112,42 +129,70 @@ const extractQueriesFromSelections = ({
     return queries;
   }
 
-  return field.selectionSet.selections.reduce((reducedQueries, selection) => {
-    if (selection.kind === 'Field') {
-      const selectedFieldName = selection.name.value;
-      const selectionFieldDef = getFieldDef(
-        schema,
-        parentType,
-        selectedFieldName
-      );
-      if (!selectionFieldDef) {
-        throw new Error(
-          `Something is wrong. The selected field ${selectedFieldName} on type ${
-            parentType.name
-          } is not in the schema.`
-        );
-      }
-      const selectionParentType = extractObjectType(selectionFieldDef.type);
+  const currentTypeAsObjectType = extractObjectType(schemaFieldDef.type);
 
-      if (selectionParentType) {
-        return extractQueriesFromSelections({
-          queries: reducedQueries,
-          activeQuery: currentQuery,
-          fragments,
-          variableValues,
-          schema,
-          path: [...path, selectedFieldName],
-          parentType: selectionParentType,
-          field: selection,
-        });
-      }
-    }
-
+  if (!currentTypeAsObjectType) {
     return queries;
-  }, queries);
+  }
+
+  return extractQueriesFromSelectionSet({
+    selectionSet: field.selectionSet,
+    queries,
+    activeQuery: currentQuery,
+    parentType: currentTypeAsObjectType,
+    variableValues,
+    schema,
+    path,
+    fragments,
+  });
 };
 
-export const extractQueriesFromOperation = (info: GraphQLResolveInfo) => {
+type ExtractFromSelectionSetParams = {
+  queries: CypherQueryFieldMap;
+  parentType: GraphQLObjectType;
+  selectionSet: SelectionSetNode;
+  variableValues: { [name: string]: any };
+  schema: GraphQLSchema;
+  path: string[];
+  fragments: { [key: string]: FragmentDefinitionNode };
+  activeQuery: CypherQuery | undefined;
+};
+
+const extractQueriesFromSelectionSet = ({
+  selectionSet,
+  queries,
+  path,
+  ...rest
+}: ExtractFromSelectionSetParams) =>
+  selectionSet.selections.reduce((reducedQueries, selection) => {
+    if (selection.kind === 'Field') {
+      return extractQueriesFromField({
+        queries: reducedQueries,
+        field: selection,
+        path: [...path, getNameOrAlias(selection)],
+        ...rest,
+      });
+    } else if (selection.kind === 'InlineFragment') {
+      return extractQueriesFromSelectionSet({
+        selectionSet: selection.selectionSet,
+        queries: reducedQueries,
+        path,
+        ...rest,
+      });
+    } else {
+      const fragment = rest.fragments[selection.name.value];
+      return extractQueriesFromSelectionSet({
+        selectionSet: fragment.selectionSet,
+        queries: reducedQueries,
+        path,
+        ...rest,
+      });
+    }
+  }, queries);
+
+export const extractCypherQueriesFromOperation = (
+  info: GraphQLResolveInfo
+): CypherQueryFieldMap => {
   const schema = info.schema;
   const rootType = info.parentType;
   const variableValues = info.variableValues;
@@ -157,16 +202,16 @@ export const extractQueriesFromOperation = (info: GraphQLResolveInfo) => {
 
   return fields.reduce(
     (queries, field) =>
-      extractQueriesFromSelections({
+      extractQueriesFromField({
         queries,
         parentType: rootType,
         field,
         variableValues,
         fragments,
-        path: [rootType.name, field.name.value],
+        path: [getNameOrAlias(field)],
         schema,
         activeQuery: undefined,
       }),
-    new Map()
+    {}
   );
 };
