@@ -168,6 +168,10 @@ export const valueNodeToValue = (
     return argFieldsToValues({}, valueNode.fields, variables);
   } else if (valueNode.kind === 'ListValue') {
     return valueNode.values.map(value => valueNodeToValue(value, variables));
+  } else if (valueNode.kind === 'IntValue') {
+    return parseInt(valueNode.value, 10);
+  } else if (valueNode.kind === 'FloatValue') {
+    return parseFloat(valueNode.value);
   } else {
     return valueNode.value;
   }
@@ -264,4 +268,38 @@ export const isRootField = (
     queryType && queryType.name,
     mutationType && mutationType.name,
   ].includes(parentType.name);
+};
+
+export const getArgumentsPlusDefaults = (
+  parentTypeName: string,
+  field: FieldNode,
+  schema: GraphQLSchema,
+  variables: { [name: string]: any }
+): { [name: string]: any } => {
+  const schemaType = schema.getType(parentTypeName);
+
+  if (!schemaType || !(schemaType instanceof GraphQLObjectType)) {
+    throw new Error(`Unknown or non-object type name "${parentTypeName}"`);
+  }
+
+  const schemaField = schemaType.getFields()[field.name.value];
+
+  if (!schemaField) {
+    throw new Error(
+      `Field "${field.name.value}" was not found on type ${schemaType.name}`
+    );
+  }
+
+  const defaults = schemaField.args.reduce(
+    (argMap, arg) =>
+      arg.defaultValue !== undefined
+        ? { ...argMap, [arg.name]: arg.defaultValue }
+        : argMap,
+    {}
+  );
+
+  return {
+    ...defaults,
+    ...argFieldsToValues({}, field.arguments || [], variables),
+  };
 };

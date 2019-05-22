@@ -47,6 +47,7 @@ describe('scanning queries from an operation', () => {
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['name', 'email'],
         params: ['args'],
+        args: { id: 'foo' },
         fieldQueries: {},
       },
     });
@@ -73,6 +74,7 @@ describe('scanning queries from an operation', () => {
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id', 'name', 'posts'],
         params: ['args'],
+        args: { id: 'foo' },
         fieldQueries: {
           posts: {
             cypher: `MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
@@ -80,6 +82,12 @@ RETURN post
 SKIP $args.pagination.offset
 LIMIT $args.pagination.first`,
             params: ['args'],
+            args: {
+              pagination: {
+                first: 10,
+                offset: 0,
+              },
+            },
             fields: ['id', 'title'],
             fieldQueries: {},
           },
@@ -108,6 +116,7 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id'],
         params: ['args'],
+        args: { id: 'foo' },
         fieldQueries: {},
       },
     });
@@ -131,11 +140,6 @@ LIMIT $args.pagination.first`,
             }
           }
         }
-
-        post(id: "bar") {
-          id
-          title
-        }
       }
     `;
 
@@ -144,6 +148,9 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id', 'posts'],
         params: ['args'],
+        args: {
+          id: 'foo',
+        },
         fieldQueries: {
           posts: {
             cypher: `MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
@@ -151,6 +158,12 @@ RETURN post
 SKIP $args.pagination.offset
 LIMIT $args.pagination.first`,
             params: ['args'],
+            args: {
+              pagination: {
+                first: 10,
+                offset: 0,
+              },
+            },
             fields: ['id'],
             fieldQueries: {},
           },
@@ -160,6 +173,7 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $parent.userId}) RETURN user',
         fields: ['id', 'name'],
         params: ['args'],
+        args: {},
         fieldQueries: {},
       },
     });
@@ -173,7 +187,7 @@ LIMIT $args.pagination.first`,
         user(id: "foo") {
           id
           name
-          posts(filter: { titleMatch: "bar" }) {
+          posts(filter: { titleMatch: "bar" }, pagination: { first: 5, offset: 10 }) {
             id
             title
           }
@@ -186,6 +200,9 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id', 'name', 'posts'],
         params: ['args'],
+        args: {
+          id: 'foo',
+        },
         fieldQueries: {
           posts: {
             cypher: `MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
@@ -194,6 +211,15 @@ RETURN post
 SKIP $args.pagination.offset
 LIMIT $args.pagination.first`,
             fields: ['id', 'title'],
+            args: {
+              filter: {
+                titleMatch: 'bar',
+              },
+              pagination: {
+                first: 5,
+                offset: 10,
+              },
+            },
             params: ['args'],
             fieldQueries: {},
           },
@@ -224,12 +250,14 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['name', 'email'],
         params: ['args'],
+        args: { id: 'foo' },
         fieldQueries: {},
       },
       'alias,settings,alias2': {
         cypher: 'MATCH (user:User {id: $parent.userId}) RETURN user',
         fields: ['id'],
         params: ['args'],
+        args: {},
         fieldQueries: {},
       },
     });

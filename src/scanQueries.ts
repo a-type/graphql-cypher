@@ -17,6 +17,7 @@ import {
   extractObjectType,
   isCypherSkip,
   getNameOrAlias,
+  getArgumentsPlusDefaults,
 } from './utils';
 import { path } from 'ramda';
 import { getFieldDef } from 'graphql/execution/execute';
@@ -99,9 +100,10 @@ const extractQueriesFromField = ({
 
   // any field with a @cypher directive has something to add to the query
   if (cypherDirectives.length) {
-    const argValues = argFieldsToValues(
-      {},
-      field.arguments || [],
+    const argValues = getArgumentsPlusDefaults(
+      parentType.name,
+      field,
+      schema,
       variableValues
     );
     // use arguments to determine the matching cypher statement.
@@ -115,6 +117,7 @@ const extractQueriesFromField = ({
       cypher,
       fields: [],
       params: field.arguments ? ['args'] : [],
+      args: argValues,
       fieldQueries: {},
     };
 

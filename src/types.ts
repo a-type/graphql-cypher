@@ -14,6 +14,9 @@ export type GenericResolver = GraphQLFieldResolver<
 export type CypherQuery = {
   cypher: string;
   params: string[];
+  args: {
+    [name: string]: any;
+  };
   fields: string[];
   fieldQueries: {
     [fieldName: string]: CypherQuery;
