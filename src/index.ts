@@ -2,11 +2,8 @@ import { GraphQLResolveInfo, defaultFieldResolver } from 'graphql';
 import { isRootField, getFieldPath, isListOrWrappedListType } from './utils';
 import { extractCypherQueriesFromOperation } from './scanQueries';
 import { AugmentedContext } from './types';
-import {
-  executeCypherQuery,
-  buildCypherQuery,
-  buildPrefixedVariables,
-} from './executeQuery';
+import { executeCypherQuery } from './executeQuery';
+import { buildCypherQuery, buildPrefixedVariables } from './buildCypher';
 
 export const middleware = async (
   resolve: Function,
