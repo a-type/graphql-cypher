@@ -7,21 +7,19 @@ import neo4jDriver from './mocks/neo4jDriver';
 import neo4jRecordSet from './mocks/neo4jRecordSet';
 import { CypherDirective } from '../directives';
 
-const resolvers = {};
-
-const schema = applyMiddleware(
-  makeExecutableSchema({
-    typeDefs,
-    resolvers,
-    schemaDirectives: {
-      cypher: CypherDirective,
-    },
-  }),
-  middleware
-);
-
 describe('the library', () => {
   test('works', async () => {
+    const schema = applyMiddleware(
+      makeExecutableSchema({
+        typeDefs,
+        resolvers: {},
+        schemaDirectives: {
+          cypher: CypherDirective,
+        },
+      }),
+      middleware
+    );
+
     neo4jDriver._mockTransaction.run.mockResolvedValueOnce(
       neo4jRecordSet([
         {
@@ -108,5 +106,113 @@ describe('the library', () => {
         },
       }
     `);
+  });
+
+  test('works with authorization', async () => {
+    neo4jDriver._mockTransaction.run.mockResolvedValue(
+      neo4jRecordSet([
+        {
+          user: {
+            name: 'Nils',
+            email: 'nils@spotify.co',
+            posts: [
+              {
+                id: '1',
+                title: 'Went Missing',
+              },
+              {
+                id: '2',
+                title: 'Says',
+              },
+            ],
+          },
+        },
+      ])
+    );
+
+    const query = `
+      query TestQuery {
+        user(id: "foo") {
+          name
+          email
+          posts {
+            id
+            title
+          }
+        }
+      }
+    `;
+
+    /**
+     * A resolver is added to the schema here which does not call
+     * runCypher unless the user 'passes our authorization checks',
+     * i.e. a context boolean is set (in this simple test case)
+     */
+    const schema = applyMiddleware(
+      makeExecutableSchema({
+        typeDefs,
+        resolvers: {
+          Query: {
+            user: async (parent, args, ctx, info) => {
+              if (!ctx.authorized) {
+                return null;
+              }
+
+              const data = await ctx.runCypher();
+              return data;
+            },
+          },
+        },
+        schemaDirectives: {
+          cypher: CypherDirective,
+        },
+      }),
+      middleware
+    );
+
+    const unauthorizedResult = await graphql({
+      schema,
+      source: query,
+      contextValue: {
+        neo4jDriver,
+        cypherContext: {
+          foo: 'bar',
+        },
+        authorized: false,
+      },
+    });
+
+    expect(unauthorizedResult.data).toEqual({
+      user: null,
+    });
+
+    const result = await graphql({
+      schema,
+      source: query,
+      contextValue: {
+        neo4jDriver,
+        cypherContext: {
+          foo: 'bar',
+        },
+        authorized: true,
+      },
+    });
+
+    expect(result.data).toEqual({
+      user: {
+        name: 'Nils',
+        email: 'nils@spotify.co',
+        posts: [
+          {
+            id: '1',
+            title: 'Went Missing',
+          },
+          {
+            id: '2',
+            title: 'Says',
+          },
+        ],
+      },
+    });
   });
 });
