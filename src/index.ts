@@ -32,18 +32,17 @@ export const middleware = async (
 
   const matchingCypherQuery = context.__graphqlCypher.cypherQueries[pathString];
   if (matchingCypherQuery) {
-    const cypher = buildCypherQuery({
-      fieldName: info.fieldName,
-      query: matchingCypherQuery,
-    });
-    const cypherVariables = buildPrefixedVariables({
-      fieldName: info.fieldName,
-      query: matchingCypherQuery,
-      parent,
-      contextValues: context.cypherContext,
-    });
-
     context.runCypher = async () => {
+      const cypher = buildCypherQuery({
+        fieldName: info.fieldName,
+        query: matchingCypherQuery,
+      });
+      const cypherVariables = buildPrefixedVariables({
+        fieldName: info.fieldName,
+        query: matchingCypherQuery,
+        parent,
+        contextValues: context.cypherContext,
+      });
       const data = await executeCypherQuery({
         cypher,
         fieldName: info.fieldName,
