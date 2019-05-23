@@ -11,7 +11,8 @@
   "scripts": {
     "start": "tsdx watch",
     "build": "tsdx build",
-    "test": "jest --watch"
+    "test": "jest --watch",
+    "test:integration": "jest -c=./jest.integration.config.js --forceExit --runInBand"
   },
   "peerDependencies": {
     "graphql": "^14.3.0",
@@ -30,8 +31,11 @@
   },
   "devDependencies": {
     "@types/chalk": "^2.2.0",
+    "@types/dockerode": "^2.5.16",
     "@types/graphql": "^14.2.0",
     "@types/jest": "^24.0.13",
+    "dockerode": "^2.5.8",
+    "fs-extra": "^8.0.1",
     "graphql": "^14.3.0",
     "graphql-middleware": "^3.0.2",
     "graphql-tools": "^4.0.4",
