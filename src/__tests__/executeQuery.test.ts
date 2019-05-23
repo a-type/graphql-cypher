@@ -13,9 +13,9 @@ describe('building a cypher query', () => {
       fieldQueries: {},
     };
 
-    expect(buildCypherQuery(fieldName, query)).toEqual(
-      `WITH apoc.cypher.runFirstColumn("MATCH (user:User) RETURN user", {parent: $parent}, true) ` +
-        `AS x UNWIND x AS \`testUser\` ` +
+    expect(buildCypherQuery({ fieldName, query })).toEqual(
+      `WITH apoc.cypher.runFirstColumnSingle("MATCH (user:User) RETURN user", {parent: $parent}) ` +
+        `AS \`testUser\` ` +
         `RETURN \`testUser\` {.id, .name} AS \`testUser\``
     );
   });
@@ -40,12 +40,12 @@ describe('building a cypher query', () => {
       },
     };
 
-    expect(buildCypherQuery(fieldName, query)).toEqual(
-      `WITH apoc.cypher.runFirstColumn("MATCH (user:User) RETURN user", {parent: $parent}, true) ` +
-        `AS x UNWIND x AS \`testUser\` ` +
+    expect(buildCypherQuery({ fieldName, query })).toEqual(
+      `WITH apoc.cypher.runFirstColumnSingle("MATCH (user:User) RETURN user", {parent: $parent}) ` +
+        `AS \`testUser\` ` +
         `RETURN \`testUser\` {.id, .posts: ` +
         `[testUser_posts IN ` +
-        `apoc.cypher.runFirstColumn("MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post", {parent: testUser}, true) ` +
+        `apoc.cypher.runFirstColumnMany("MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post", {parent: testUser}) ` +
         `| testUser_posts {.id, .title}]` +
         `} AS \`testUser\``
     );
@@ -62,9 +62,9 @@ describe('building a cypher query', () => {
       fieldQueries: {},
     };
 
-    expect(buildCypherQuery(fieldName, query)).toEqual(
-      `WITH apoc.cypher.runFirstColumn("MATCH (user:User{id: $args.id}) RETURN user", {args: $testUser_args, parent: $parent}, true) ` +
-        `AS x UNWIND x AS \`testUser\` ` +
+    expect(buildCypherQuery({ fieldName, query })).toEqual(
+      `WITH apoc.cypher.runFirstColumnSingle("MATCH (user:User{id: $args.id}) RETURN user", {args: $testUser_args, parent: $parent}) ` +
+        `AS \`testUser\` ` +
         `RETURN \`testUser\` {.id, .name} AS \`testUser\``
     );
   });
@@ -92,14 +92,32 @@ describe('building a cypher query', () => {
       },
     };
 
-    expect(buildCypherQuery(fieldName, query)).toEqual(
-      `WITH apoc.cypher.runFirstColumn("MATCH (user:User) RETURN user", {parent: $parent}, true) ` +
-        `AS x UNWIND x AS \`testUser\` ` +
+    expect(buildCypherQuery({ fieldName, query })).toEqual(
+      `WITH apoc.cypher.runFirstColumnSingle("MATCH (user:User) RETURN user", {parent: $parent}) ` +
+        `AS \`testUser\` ` +
         `RETURN \`testUser\` {.id, .posts: ` +
         `[testUser_posts IN ` +
-        `apoc.cypher.runFirstColumn("MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post LIMIT $args.limit", {args: $testUser_posts_args, parent: testUser}, true) ` +
+        `apoc.cypher.runFirstColumnMany("MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post LIMIT $args.limit", {args: $testUser_posts_args, parent: testUser}) ` +
         `| testUser_posts {.id, .title}]` +
         `} AS \`testUser\``
+    );
+  });
+
+  test('works with top-level list field', () => {
+    const fieldName = 'testPosts';
+    const query: CypherQuery = {
+      cypher: 'MATCH (post:Post) RETURN post',
+      params: [],
+      fields: ['id', 'title'],
+      args: {},
+      returnsList: true,
+      fieldQueries: {},
+    };
+
+    expect(buildCypherQuery({ fieldName, query })).toEqual(
+      `WITH apoc.cypher.runFirstColumnMany("MATCH (post:Post) RETURN post", {parent: $parent}) ` +
+        `AS x UNWIND x AS \`testPosts\` ` +
+        `RETURN \`testPosts\` {.id, .title} AS \`testPosts\``
     );
   });
 });

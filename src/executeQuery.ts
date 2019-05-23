@@ -1,5 +1,6 @@
 import { CypherQuery } from './types';
 import { v1 } from 'neo4j-driver';
+import chalk from 'chalk';
 
 const escapeQuotes = (string: string) => string.replace(/"/g, '\\"');
 const safeVar = (v: any) => {
@@ -13,11 +14,15 @@ const safeVar = (v: any) => {
  * bar: $bar, baz: $baz, parent: parentVar
  * Parent is special, it gets added if a parentName is passed in.
  */
-const buildSubqueryParams = (
-  params: string[],
-  prefix: string,
-  parentName?: string
-): string => {
+const buildSubqueryParams = ({
+  params,
+  prefix,
+  parentName,
+}: {
+  params: string[];
+  prefix: string;
+  parentName?: string;
+}): string => {
   const paramTuples: [string, string][] = params.map(key => [
     key,
     `$${prefix}${key}`,
@@ -31,17 +36,28 @@ const buildSubqueryParams = (
 
 /**
  * Creates a clause that runs a custom query statement:
- * apoc.cypher.runFirstColumn("MATCH (foo:Foo {id: \"bar\"}) RETURN foo", {foo: $foo, parent: parentVar}, true)
+ * apoc.cypher.runFirstColumnSingle("MATCH (foo:Foo {id: \"bar\"}) RETURN foo", {foo: $foo, parent: parentVar})
+ * or
+ * apoc.cypher.runFirstColumnMany("MATCH (bar:Bar) RETURN bar", {})
+ * (for queries that expect to return a list)
  * This basically lets us run arbitrary queries in their own context
  */
-const buildSubqueryClause = (
-  query: CypherQuery,
-  prefix: string,
-  parentName?: string
-) =>
-  `apoc.cypher.runFirstColumn("${escapeQuotes(
-    query.cypher
-  )}", {${buildSubqueryParams(query.params, prefix, parentName)}}, true)`;
+const buildSubqueryClause = ({
+  query,
+  prefix,
+  parentName,
+}: {
+  query: CypherQuery;
+  prefix: string;
+  parentName?: string;
+}) =>
+  `apoc.cypher.runFirstColumn${
+    query.returnsList ? 'Many' : 'Single'
+  }("${escapeQuotes(query.cypher)}", {${buildSubqueryParams({
+    params: query.params,
+    prefix,
+    parentName,
+  })}})`;
 
 /**
  * Creates either:
@@ -50,12 +66,17 @@ const buildSubqueryClause = (
  * .bar: [parent_bar IN apoc.cypher ...]
  * for a query-backed field
  */
-const buildField = (
-  fieldName: string,
-  prefix: string,
-  parentName: string,
-  query?: CypherQuery
-): string => {
+const buildField = ({
+  fieldName,
+  prefix,
+  parentName,
+  query,
+}: {
+  fieldName: string;
+  prefix: string;
+  parentName: string;
+  query?: CypherQuery;
+}): string => {
   if (!query) {
     return `.${fieldName}`;
   }
@@ -63,11 +84,24 @@ const buildField = (
   const namespacedName = `${parentName}_${fieldName}`;
   const fieldPrefix = prefix + fieldName + '_';
 
-  return (
-    `.${fieldName}: [${namespacedName} IN ` +
-    buildSubqueryClause(query, fieldPrefix, parentName) +
-    ` | ${namespacedName} ${buildFields(fieldPrefix, namespacedName, query)}]`
-  );
+  const fieldLabel = `.${fieldName}:`;
+  const fields = buildFields({
+    prefix: fieldPrefix,
+    parentName: namespacedName,
+    query,
+  });
+  const listPrefix = query.returnsList ? ` [${namespacedName} IN ` : '';
+  const listInfix = query.returnsList ? ` | ${namespacedName} ` : '';
+  const listSuffix = query.returnsList ? `]` : '';
+
+  const listProjection =
+    listPrefix +
+    buildSubqueryClause({ query, prefix: fieldPrefix, parentName }) +
+    listInfix +
+    fields +
+    listSuffix;
+
+  return fieldLabel + listProjection;
 };
 
 /**
@@ -76,11 +110,15 @@ const buildField = (
  * which goes after a node RETURN value to indicate which fields
  * to select and how to query for sub-field queries
  */
-const buildFields = (
-  prefix: string,
-  parentName: string,
-  query: CypherQuery
-): string => {
+const buildFields = ({
+  prefix,
+  parentName,
+  query,
+}: {
+  prefix: string;
+  parentName: string;
+  query: CypherQuery;
+}): string => {
   if (!query.fields.length) {
     return '';
   }
@@ -89,14 +127,25 @@ const buildFields = (
     `{` +
     query.fields
       .map(fieldName =>
-        buildField(fieldName, prefix, parentName, query.fieldQueries[fieldName])
+        buildField({
+          fieldName,
+          prefix,
+          parentName,
+          query: query.fieldQueries[fieldName],
+        })
       )
       .join(', ') +
     `}`
   );
 };
 
-export const buildCypherQuery = (fieldName: string, query: CypherQuery) => {
+export const buildCypherQuery = ({
+  fieldName,
+  query,
+}: {
+  fieldName: string;
+  query: CypherQuery;
+}) => {
   const safeName = safeVar(fieldName);
   const prefix = safeName + '_';
 
@@ -106,12 +155,16 @@ export const buildCypherQuery = (fieldName: string, query: CypherQuery) => {
   // within the Cypher context
   const parentVariableName = '$parent';
 
+  // if the return value is a list, we iterate and unwind. Otherwise,
+  // we can just "AS foo" immediately from the subquery return
+  const listUnwind = query.returnsList ? ' AS x UNWIND x' : '';
+
   return (
     `WITH ` +
-    buildSubqueryClause(query, prefix, parentVariableName) +
-    ` AS x UNWIND x AS \`${safeName}\` ` +
+    buildSubqueryClause({ query, prefix, parentName: parentVariableName }) +
+    `${listUnwind} AS \`${safeName}\` ` +
     `RETURN \`${safeName}\` ` +
-    buildFields(prefix, safeName, query) +
+    buildFields({ prefix, parentName: safeName, query }) +
     ` AS \`${safeName}\``
   );
 };
@@ -120,19 +173,22 @@ export const buildCypherQuery = (fieldName: string, query: CypherQuery) => {
  * recursively flattens and builds a set of arg object variables for a query
  * and all its sub-queries
  */
-const buildPrefixedFieldArgVariables = (
-  prefix: string,
-  query: CypherQuery
-) => ({
+const buildPrefixedFieldArgVariables = ({
+  prefix,
+  query,
+}: {
+  prefix: string;
+  query: CypherQuery;
+}) => ({
   [`${prefix}args`]: query.args,
   ...query.fields
     .filter(fieldName => !!query.fieldQueries[fieldName])
     .reduce(
       (args, fieldName) =>
-        buildPrefixedFieldArgVariables(
-          prefix + fieldName + '_',
-          query.fieldQueries[fieldName]
-        ),
+        buildPrefixedFieldArgVariables({
+          prefix: prefix + fieldName + '_',
+          query: query.fieldQueries[fieldName],
+        }),
       {}
     ),
 });
@@ -158,7 +214,7 @@ export const buildPrefixedVariables = ({
     // the user may supply values in their context which they always want passed to queries
     context: contextValues,
 
-    ...buildPrefixedFieldArgVariables(prefix, query),
+    ...buildPrefixedFieldArgVariables({ prefix, query }),
   };
 };
 
@@ -169,6 +225,7 @@ export const executeCypherQuery = async ({
   session,
   write = false,
   isList,
+  debug = false,
 }: {
   fieldName: string;
   cypher: string;
@@ -176,10 +233,25 @@ export const executeCypherQuery = async ({
   session: v1.Session;
   isList: boolean;
   write?: boolean;
+  debug?: boolean;
 }): Promise<any> => {
   const transaction = write
     ? session.writeTransaction
     : session.readTransaction;
+
+  if (debug) {
+    console.debug(
+      [
+        chalk.blue(`[GraphQL-Cypher]`) +
+          `Running ${write ? 'write' : 'read'} transaction:`,
+        '',
+        chalk.grey(cypher),
+        '',
+        chalk.green(`Parameters:`),
+        chalk.grey(JSON.stringify(variables)),
+      ].join('\n')
+    );
+  }
 
   const data = await transaction(async tx => {
     const result = await tx.run(cypher, variables);
@@ -187,7 +259,7 @@ export const executeCypherQuery = async ({
       if (isList) {
         return result.records.map(record => record.get(fieldName));
       } else {
-        return result.records[0].get('fieldName');
+        return result.records[0].get(fieldName);
       }
     }
     return null;

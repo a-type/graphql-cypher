@@ -1,5 +1,5 @@
-import { GraphQLResolveInfo, GraphQLList, isListType } from 'graphql';
-import { isRootField, getFieldPath, createOpenPromise } from './utils';
+import { GraphQLResolveInfo, defaultFieldResolver } from 'graphql';
+import { isRootField, getFieldPath, isListOrWrappedListType } from './utils';
 import { extractCypherQueriesFromOperation } from './scanQueries';
 import { AugmentedContext } from './types';
 import {
@@ -32,7 +32,10 @@ export const middleware = async (
 
   const matchingCypherQuery = context.__graphqlCypher.cypherQueries[pathString];
   if (matchingCypherQuery) {
-    const cypher = buildCypherQuery(info.fieldName, matchingCypherQuery);
+    const cypher = buildCypherQuery({
+      fieldName: info.fieldName,
+      query: matchingCypherQuery,
+    });
     const cypherVariables = buildPrefixedVariables({
       fieldName: info.fieldName,
       query: matchingCypherQuery,
@@ -46,20 +49,18 @@ export const middleware = async (
         fieldName: info.fieldName,
         variables: cypherVariables,
         session: context.__graphqlCypher.session,
-        isList: isListType(info.returnType),
+        isList: isListOrWrappedListType(info.returnType),
+        debug: __DEV__,
       });
       context.__graphqlCypher.resultCache[pathString] = data;
       return data;
     };
   } else {
     context.runCypher = async () => {
-      return parent[info.fieldName] || null;
+      return defaultFieldResolver(parent, args, context, info);
     };
   }
 
-  // begin resolving. the resolver will block on awaiting context.cypher if
-  // the user has decided to use the queried data
-  const resultPromise = resolve(parent, args, context, info);
-
-  return await resultPromise;
+  const result = await resolve(parent, args, context, info);
+  return result;
 };

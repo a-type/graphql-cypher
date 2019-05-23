@@ -11,7 +11,7 @@
   "scripts": {
     "start": "tsdx watch",
     "build": "tsdx build",
-    "test": "tsdx test --watch"
+    "test": "jest --watch"
   },
   "peerDependencies": {
     "graphql": "^14.3.0",
@@ -29,24 +29,24 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
+    "@types/chalk": "^2.2.0",
     "@types/graphql": "^14.2.0",
     "@types/jest": "^24.0.13",
     "graphql": "^14.3.0",
     "graphql-middleware": "^3.0.2",
     "graphql-tools": "^4.0.4",
     "husky": "^2.3.0",
+    "jest": "^24.8.0",
     "neo4j-driver": "^1.7.4",
     "prettier": "^1.17.1",
     "pretty-quick": "^1.10.0",
+    "ts-jest": "^24.0.2",
     "tsdx": "^0.5.11",
     "tslib": "^1.9.3",
     "typescript": "^3.4.5"
   },
   "dependencies": {
+    "chalk": "^2.4.2",
     "ramda": "^0.26.1"
-  },
-  "jest": {
-    "testMatch": null,
-    "testRegex": "\\.test\\.ts$"
   }
 }

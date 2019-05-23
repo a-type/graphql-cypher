@@ -3,6 +3,9 @@ import typeDefs from './fixtures/typeDefs';
 import { middleware } from '..';
 import { makeExecutableSchema } from 'graphql-tools';
 import { applyMiddleware } from 'graphql-middleware';
+import neo4jDriver from './mocks/neo4jDriver';
+import neo4jRecordSet from './mocks/neo4jRecordSet';
+import { CypherDirective } from '../directives';
 
 const resolvers = {};
 
@@ -10,13 +13,37 @@ const schema = applyMiddleware(
   makeExecutableSchema({
     typeDefs,
     resolvers,
+    schemaDirectives: {
+      cypher: CypherDirective,
+    },
   }),
   middleware
 );
 
 describe('the library', () => {
   test('works', async () => {
-    await graphql({
+    neo4jDriver._mockTransaction.run.mockResolvedValueOnce(
+      neo4jRecordSet([
+        {
+          user: {
+            name: 'Nils',
+            email: 'nils@spotify.co',
+            posts: [
+              {
+                id: '1',
+                title: 'Went Missing',
+              },
+              {
+                id: '2',
+                title: 'Says',
+              },
+            ],
+          },
+        },
+      ])
+    );
+
+    const result = await graphql({
       schema,
       source: `
         query TestQuery {
@@ -30,8 +57,56 @@ describe('the library', () => {
           }
         }
       `,
+      contextValue: {
+        neo4jDriver,
+        cypherContext: {
+          foo: 'bar',
+        },
+      },
     });
 
-    expect(true).toBe(true);
+    expect(result.data).toEqual({
+      user: {
+        name: 'Nils',
+        email: 'nils@spotify.co',
+        posts: [
+          {
+            id: '1',
+            title: 'Went Missing',
+          },
+          {
+            id: '2',
+            title: 'Says',
+          },
+        ],
+      },
+    });
+
+    expect(neo4jDriver._mockTransaction.run).toHaveBeenCalled();
+    expect(neo4jDriver._mockTransaction.run.mock.calls[0][0])
+      .toMatchInlineSnapshot(`
+            "WITH apoc.cypher.runFirstColumnSingle(\\"MATCH (user:User {id: $args.id}) RETURN user\\", {args: $user_args, parent: $parent}) AS \`user\` RETURN \`user\` {.name, .email, .posts: [user_posts IN apoc.cypher.runFirstColumnMany(\\"MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
+            RETURN post
+            SKIP $args.pagination.offset
+            LIMIT $args.pagination.first\\", {args: $user_posts_args, parent: user}) | user_posts {.id, .title}]} AS \`user\`"
+        `);
+    expect(neo4jDriver._mockTransaction.run.mock.calls[0][1])
+      .toMatchInlineSnapshot(`
+      Object {
+        "context": Object {
+          "foo": "bar",
+        },
+        "parent": undefined,
+        "user_args": Object {
+          "id": "foo",
+        },
+        "user_posts_args": Object {
+          "pagination": Object {
+            "first": 10,
+            "offset": 0,
+          },
+        },
+      }
+    `);
   });
 });

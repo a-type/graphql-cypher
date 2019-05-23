@@ -17,8 +17,12 @@ import {
   GraphQLOutputType,
   GraphQLNonNull,
   GraphQLList,
-  isListType as graphQlIsListType,
-  isNonNullType as graphQlIsNonNullType,
+  isListType,
+  isNonNullType,
+  isObjectType,
+  isInterfaceType,
+  isInputObjectType,
+  isUnionType,
 } from 'graphql';
 import { CypherConditionalStatement } from './types';
 
@@ -323,12 +327,40 @@ export const createOpenPromise = () => {
   };
 };
 
-export const isListType = (type: GraphQLOutputType) => {
-  if (graphQlIsListType(type)) {
+export const isListOrWrappedListType = (type: GraphQLOutputType) => {
+  if (isListType(type)) {
     return true;
   }
-  if (graphQlIsNonNullType(type)) {
-    return isListType(type.ofType);
+  if (isNonNullType(type)) {
+    return isListOrWrappedListType(type.ofType);
   }
   return false;
+};
+
+export const isDefaultResolver = (
+  schema: GraphQLSchema,
+  typeName: string,
+  fieldName?: string
+) => {
+  const type = schema.getType(typeName);
+  if (!type || isInputObjectType(type)) {
+    return true;
+  }
+
+  if (isObjectType(type) || isInterfaceType(type)) {
+    if (!fieldName) {
+      return true;
+    }
+
+    const field = type.getFields()[fieldName];
+    if (!field) {
+      return true;
+    }
+
+    return !field.resolve;
+  } else if (isUnionType(type)) {
+    return !type.resolveType;
+  } else {
+    return true;
+  }
 };
