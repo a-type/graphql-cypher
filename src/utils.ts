@@ -44,11 +44,18 @@ export function isRoot(info: GraphQLResolveInfo): boolean {
     .some(rootType => !!rootType && rootType.name === info.parentType.name);
 }
 
+/**
+ * Converts a path from `info` into a field path, skipping over
+ * array indices (since they are not represented in the schema
+ * field selection paths)
+ */
 export function getFieldPath(info: GraphQLResolveInfo) {
-  const path: (string | number)[] = [];
+  const path: string[] = [];
   let pathLink: ResponsePath | undefined = info.path;
   while (pathLink) {
-    path.unshift(pathLink.key);
+    if (typeof pathLink.key === 'string') {
+      path.unshift(pathLink.key);
+    }
     pathLink = pathLink.prev;
   }
 

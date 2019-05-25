@@ -23,10 +23,21 @@ export const middleware = async (
       session,
       isWrite,
     };
+    if (__DEV__) {
+      console.debug(
+        [
+          chalk.cyan(
+            '[GraphQL-Cypher] Planned Cypher queries for this operation:'
+          ),
+          chalk.gray(JSON.stringify(context.__graphqlCypher.cypherQueries)),
+        ].join('\n')
+      );
+    }
   }
 
   const path = getFieldPath(info);
   const pathString = path.join(',');
+  console.log(pathString);
 
   const matchingCypherQuery = context.__graphqlCypher.cypherQueries[pathString];
   if (matchingCypherQuery) {
@@ -37,10 +48,12 @@ export const middleware = async (
           query: matchingCypherQuery,
         });
         if (__DEV__) {
-          console.debug([
-            chalk.yellow('[GraphQL-Cypher] Cypher query structure:'),
-            chalk.gray(JSON.stringify(matchingCypherQuery)),
-          ]);
+          console.debug(
+            [
+              chalk.yellow('[GraphQL-Cypher] Cypher query structure:'),
+              chalk.gray(JSON.stringify(matchingCypherQuery)),
+            ].join('\n')
+          );
         }
         const cypherVariables = buildPrefixedVariables({
           fieldName: info.fieldName,
