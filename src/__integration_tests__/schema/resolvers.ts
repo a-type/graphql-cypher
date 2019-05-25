@@ -1,21 +1,29 @@
+import { people, companies } from '../neo4j/seed';
+
+const firstUserId = people[0].id;
+const secondUserId = people[1].id;
+const firstCompanyId = companies[0].id;
+const secondCompanyId = companies[1].id;
+const thirdCompanyId = companies[2].id;
+
 const mockJobApplications = {
-  a55bcb7c856850932514eed84ea60bf75a767d38: [
+  [firstUserId]: [
     {
       id: 'application1',
-      applicantId: 'a55bcb7c856850932514eed84ea60bf75a767d38',
-      companyId: '3c7109e9a98feb5c163669b3cff37bccb68ac16b',
+      applicantId: firstUserId,
+      companyId: firstCompanyId,
     },
     {
       id: 'application2',
-      applicantId: 'a55bcb7c856850932514eed84ea60bf75a767d38',
-      companyId: '484ad8f4cf43b9df34eed3b51b4246359b98a062',
+      applicantId: firstUserId,
+      companyId: secondCompanyId,
     },
   ],
-  '898e64a2bb6fd6b306241f9136c7880a3d3399a8': [
+  [secondUserId]: [
     {
       id: 'application3',
-      applicantId: '898e64a2bb6fd6b306241f9136c7880a3d3399a8',
-      companyId: '762d7d9c86b477df0b1174402f8b8e0acf4286a5',
+      applicantId: secondUserId,
+      companyId: thirdCompanyId,
     },
   ],
 };

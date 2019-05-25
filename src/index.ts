@@ -4,6 +4,7 @@ import { extractCypherQueriesFromOperation } from './scanQueries';
 import { AugmentedContext } from './types';
 import { executeCypherQuery } from './executeQuery';
 import { buildCypherQuery, buildPrefixedVariables } from './buildCypher';
+import chalk from 'chalk';
 
 export const middleware = async (
   resolve: Function,
@@ -30,26 +31,37 @@ export const middleware = async (
   const matchingCypherQuery = context.__graphqlCypher.cypherQueries[pathString];
   if (matchingCypherQuery) {
     context.runCypher = async () => {
-      const cypher = buildCypherQuery({
-        fieldName: info.fieldName,
-        query: matchingCypherQuery,
-      });
-      const cypherVariables = buildPrefixedVariables({
-        fieldName: info.fieldName,
-        query: matchingCypherQuery,
-        parent,
-        contextValues: context.cypherContext,
-      });
-      const data = await executeCypherQuery({
-        cypher,
-        fieldName: info.fieldName,
-        variables: cypherVariables,
-        session: context.__graphqlCypher.session,
-        isList: isListOrWrappedListType(info.returnType),
-        debug: __DEV__,
-      });
-      context.__graphqlCypher.resultCache[pathString] = data;
-      return data;
+      try {
+        const cypher = buildCypherQuery({
+          fieldName: info.fieldName,
+          query: matchingCypherQuery,
+        });
+        const cypherVariables = buildPrefixedVariables({
+          fieldName: info.fieldName,
+          query: matchingCypherQuery,
+          parent: parent || null,
+          contextValues: context.cypherContext,
+        });
+        const data = await executeCypherQuery({
+          cypher,
+          fieldName: info.fieldName,
+          variables: cypherVariables,
+          session: context.__graphqlCypher.session,
+          isList: isListOrWrappedListType(info.returnType),
+          debug: __DEV__,
+        });
+        context.__graphqlCypher.resultCache[pathString] = data;
+        return data;
+      } catch (err) {
+        console.error(
+          [
+            chalk.red('[GraphQL-Cypher] Execution error'),
+            err.toString(),
+            (err as Error).stack,
+          ].join('\n')
+        );
+        throw err;
+      }
     };
   } else {
     context.runCypher = async () => {

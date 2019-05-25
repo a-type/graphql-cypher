@@ -19,8 +19,8 @@ export const executeCypherQuery = async ({
   debug?: boolean;
 }): Promise<any> => {
   const transaction = write
-    ? session.writeTransaction
-    : session.readTransaction;
+    ? session.writeTransaction.bind(session)
+    : session.readTransaction.bind(session);
 
   if (debug) {
     console.debug(

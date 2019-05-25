@@ -43,7 +43,7 @@ describe('building a cypher query', () => {
     expect(buildCypherQuery({ fieldName, query })).toEqual(
       `WITH apoc.cypher.runFirstColumnSingle("WITH $parent AS parent MATCH (user:User) RETURN user", {parent: $parent}) ` +
         `AS \`testUser\` ` +
-        `RETURN \`testUser\` {.id, .posts: ` +
+        `RETURN \`testUser\` {.id, posts: ` +
         `[testUser_posts IN ` +
         `apoc.cypher.runFirstColumnMany("WITH {parent} AS parent MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post", {parent: testUser}) ` +
         `| testUser_posts {.id, .title}]` +
@@ -95,7 +95,7 @@ describe('building a cypher query', () => {
     expect(buildCypherQuery({ fieldName, query })).toEqual(
       `WITH apoc.cypher.runFirstColumnSingle("WITH $parent AS parent MATCH (user:User) RETURN user", {parent: $parent}) ` +
         `AS \`testUser\` ` +
-        `RETURN \`testUser\` {.id, .posts: ` +
+        `RETURN \`testUser\` {.id, posts: ` +
         `[testUser_posts IN ` +
         `apoc.cypher.runFirstColumnMany("WITH {parent} AS parent MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post LIMIT $args.limit", {args: $testUser_posts_args, parent: testUser}) ` +
         `| testUser_posts {.id, .title}]` +

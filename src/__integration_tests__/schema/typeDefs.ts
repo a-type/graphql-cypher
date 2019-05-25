@@ -56,7 +56,7 @@ export default `
     seeks: [Skill!]!
       @cypher(
         statement: """
-        MATCH (parent)-[:LOOKS_FOR_COMPETENCE]->(skill:Skill) RETURN skill
+        MATCH (parent)-[:SEEKS]->(skill:Skill) RETURN skill
         """
       )
 
@@ -72,14 +72,14 @@ export default `
     id: ID!
     name: String!
 
-    homeResidents: [Person!]!
+    hasResidents: [Person!]!
       @cypher(
         statement: """
         MATCH (parent)<-[:LIVES_IN]-(person:Person) RETURN person
         """
       )
 
-    hasOfficeOf: [Company!]!
+    hasCompanyOffice: [Company!]!
       @cypher(
         statement: """
         MATCH (parent)<-[:LOCATED_IN]-(company:Company) RETURN company

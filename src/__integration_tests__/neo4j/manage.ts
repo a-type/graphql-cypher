@@ -31,7 +31,12 @@ export const initialize = async () => {
       Labels: {
         'neo4j-migrate-test': 'true',
       },
-      Env: ['NEO4J_AUTH=none'],
+      Env: [
+        'NEO4J_AUTH=none',
+        'NEO4J_apoc_import_file_enabled=true',
+        'NEO4J_apoc_import_file_use__neo4j__config=true',
+        'NEO4J_dbms_security_procedures_unrestricted=apoc.*',
+      ],
       HostConfig: {
         PortBindings: {
           '7687/tcp': [
@@ -40,10 +45,13 @@ export const initialize = async () => {
             },
           ],
         },
+        Binds: [
+          pathResolve(__dirname, './mountedVolumes/plugins') + ':/plugins',
+        ],
       },
-      // Volumes: {
-      //   '/plugins': pathResolve(__dirname, './mountedVolumes/plugins'),
-      // },
+      Volumes: {
+        '/plugins': {},
+      },
     },
     (err, res) => {
       if (err) {
@@ -82,6 +90,7 @@ export const cleanup = async () => {
   await Promise.all(
     containers.map(async container => {
       if (container.Labels['neo4j-migrate-test']) {
+        console.log('Terminating container...');
         const realContainer = await docker.getContainer(container.Id);
         await realContainer.kill();
         await realContainer.remove();

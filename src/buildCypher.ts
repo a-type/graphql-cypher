@@ -87,22 +87,24 @@ const buildField = ({
   const namespacedName = `${parentName}_${fieldName}`;
   const fieldPrefix = prefix + fieldName + '_';
 
-  const fieldLabel = `.${fieldName}:`;
+  const fieldLabel = `${fieldName}: `;
   const fields = buildFields({
     prefix: fieldPrefix,
     parentName: namespacedName,
     query,
   });
-  const listPrefix = query.returnsList ? ` [${namespacedName} IN ` : '';
-  const listInfix = query.returnsList ? ` | ${namespacedName} ` : '';
-  const listSuffix = query.returnsList ? `]` : '';
+  const listPrefix = `[${namespacedName} IN `;
+  const listInfix = ` | ${namespacedName} `;
+  const listSuffix = `]`;
 
   const listProjection =
+    (query.returnsList ? '' : 'head(') +
     listPrefix +
     buildSubqueryClause({ query, prefix: fieldPrefix, parentName }) +
     listInfix +
     fields +
-    listSuffix;
+    listSuffix +
+    (query.returnsList ? '' : ')');
 
   return fieldLabel + listProjection;
 };
