@@ -36,6 +36,12 @@ export const middleware = async (
           fieldName: info.fieldName,
           query: matchingCypherQuery,
         });
+        if (__DEV__) {
+          console.debug([
+            chalk.yellow('[GraphQL-Cypher] Cypher query structure:'),
+            chalk.gray(JSON.stringify(matchingCypherQuery)),
+          ]);
+        }
         const cypherVariables = buildPrefixedVariables({
           fieldName: info.fieldName,
           query: matchingCypherQuery,

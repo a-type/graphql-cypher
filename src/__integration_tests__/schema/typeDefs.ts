@@ -121,7 +121,7 @@ export default `
     people(pagination: PaginationInput = { first: 10, offset: 0 }): [Person!]!
       @cypher(
         statement: """
-        MATCH (person:Person) RETURN person SKIP $args.offset LIMIT $args.first
+        MATCH (person:Person) RETURN person SKIP $args.pagination.offset LIMIT $args.pagination.first
         """
       )
 
