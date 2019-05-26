@@ -8,81 +8,6 @@ A simple but powerful translation layer between GraphQL and Cypher.
 
 ### [Read the Documentation](#documentation)
 
-### Goals
-
-- Support application-focused use cases, giving users as much control as possible over their GraphQL query and mutation contracts
-- Make it dead simple for a user familiar with Cypher to start resolving complex GraphQL queries with next to no business logic
-- Support multi-data-source apps, letting users choose which data store is the right fit for each part of their GraphQL schema and stitch them together with ease
-- Allow users to utilize resolvers to write logic surrounding their data access when it's necessary, without hacky workarounds
-
-### Example Schema
-
-```graphql
-input Pagination {
-  first: Int
-  offset: Int
-}
-
-input PostFilter {
-  titleMatch: String
-}
-
-type Post {
-  id: ID!
-  title: String!
-  body: String!
-}
-
-type UserSettings {
-  id: ID!
-  homepage: String!
-}
-
-type User {
-  id: ID!
-  name: String!
-  email: String!
-
-  posts(
-    pagination: Pagination = { first: 10, offset: 0 }
-    filter: PostFilter
-  ): [Post!]!
-    @cypher(
-      statements: [
-        {
-          when: "$args.filter"
-          statement: """
-          MATCH (parent)-[:AUTHOR_OF]->(post:Post)
-          WHERE post.title =~ $args.filter.titleMatch
-          RETURN post
-          SKIP $args.pagination.offset
-          LIMIT $args.pagination.first
-          """
-        }
-        {
-          statement: """
-          MATCH (parent)-[:AUTHOR_OF]->(post:Post)
-          RETURN post
-          SKIP $args.pagination.offset
-          LIMIT $args.pagination.first
-          """
-        }
-      ]
-    )
-
-  settings: UserSettings! @cypherSkip
-}
-
-type Query {
-  user(id: ID!): User
-    @cypher(
-      statement: """
-      MATCH (user:User {id: $args.id}) RETURN user
-      """
-    )
-}
-```
-
 ## Key Features
 
 ### 🔨 Simple setup
@@ -129,7 +54,7 @@ type Query {
 }
 ```
 
-### 🔑 Authorization and custom-logic friendly
+### 🔑 Authorization friendly
 
 `graphql-cypher` is simple by default, but it gives you the option to optionally omit fields based on logic you define in a regular old reducer. This means it can better support custom authorization or pre-query logic.
 
@@ -148,6 +73,13 @@ const resolvers = {
   },
 };
 ```
+
+## Goals
+
+- Support application-focused use cases, giving users as much control as possible over their GraphQL query and mutation contracts
+- Make it dead simple for a user familiar with Cypher to start resolving complex GraphQL queries with next to no business logic
+- Support multi-data-source apps, letting users choose which data store is the right fit for each part of their GraphQL schema and stitch them together with ease
+- Allow users to utilize resolvers to write logic surrounding their data access when it's necessary, without hacky workarounds
 
 ## Documentation
 
@@ -341,6 +273,13 @@ type Mutation {
   - This could probably be changed, but not within the current middleware model. A new traversal to just resolve the Cypher queries before the main resolvers are called would probably need to be introduced.
 - `@cypher` custom queries are probably not going to be as performant as a hand-written query. But, that is the core tradeoff of the library; it would be labor-intensive if not infeasible to try to anticipate and craft a custom query for every GraphQL query your users make.
   - One of my first roadmap items is to investigate more 'builder-style' query directives which make a more native query instead of only supporting raw Cypher statements
+- Relationships are simply not a part of the way this library works right now. This is obviously a significant limitation, but it shouldn't be hard to change... I just haven't gotten around to defining that use case yet.
+
+## Inspiration
+
+Obviously the official [`neo4j-graphql-js`](https://github.com/neo4j-graphql/neo4j-graphql-js) was a huge inspiration for this library. I learned a lot by reading over their unit tests and source code, without which I would probably have struggled for far longer trying to understand how to craft the underlying Cypher queries.
+
+`neo4j-graphql-js` still has a lot of great features which I don't intend to bring to `graphql-cypher`, namely things like automated generation with convention-based parameters. I hope that `graphql-cypher` will become a tool geared toward a specific audience of people like me who want full control over their app, and `neo4j-graphql-js` can continue to evolve in the direction of auto-generated schemas and turnkey prototyping solutions.
 
 ---
 
