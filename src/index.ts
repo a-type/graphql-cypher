@@ -36,7 +36,6 @@ export const middleware = async (
 
   const path = getFieldPath(info);
   const pathString = path.join(',');
-  console.log(pathString);
 
   const matchingCypherQuery = context.__graphqlCypher.cypherQueries[pathString];
   if (matchingCypherQuery) {
