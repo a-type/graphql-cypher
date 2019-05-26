@@ -3,7 +3,7 @@ import resolvers from './resolvers';
 import { makeExecutableSchema } from 'graphql-tools';
 import { CypherDirective } from '../../directives';
 import { applyMiddleware } from 'graphql-middleware';
-import { middleware } from '../..';
+import { middleware } from '../../middleware';
 
 export default applyMiddleware(
   makeExecutableSchema({

@@ -13,7 +13,6 @@ import {
 } from 'graphql';
 import {
   getCypherStatementsFromDirective,
-  argFieldsToValues,
   extractObjectType,
   isCypherSkip,
   getNameOrAlias,

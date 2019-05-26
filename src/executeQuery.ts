@@ -1,5 +1,4 @@
 import { v1 } from 'neo4j-driver';
-import chalk from 'chalk';
 
 export const executeCypherQuery = async ({
   fieldName,
@@ -8,7 +7,6 @@ export const executeCypherQuery = async ({
   session,
   write = false,
   isList,
-  debug = false,
 }: {
   fieldName: string;
   cypher: string;
@@ -16,24 +14,10 @@ export const executeCypherQuery = async ({
   session: v1.Session;
   isList: boolean;
   write?: boolean;
-  debug?: boolean;
 }): Promise<any> => {
   const transaction = write
     ? session.writeTransaction.bind(session)
     : session.readTransaction.bind(session);
-
-  if (debug) {
-    console.debug(
-      [
-        chalk.blue(
-          `[GraphQL-Cypher] Running ${write ? 'write' : 'read'} transaction:`
-        ),
-        chalk.grey(cypher),
-        chalk.green(`Parameters:`),
-        chalk.grey(JSON.stringify(variables)),
-      ].join('\n')
-    );
-  }
 
   const data = await transaction(async (tx: v1.Transaction) => {
     const result = await tx.run(cypher, variables);

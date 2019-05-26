@@ -1,13 +1,13 @@
 import { graphql } from 'graphql';
 import typeDefs from './fixtures/typeDefs';
-import { middleware } from '..';
+import { middleware } from '../middleware';
 import { makeExecutableSchema } from 'graphql-tools';
 import { applyMiddleware } from 'graphql-middleware';
 import neo4jDriver from './mocks/neo4jDriver';
 import neo4jRecordSet from './mocks/neo4jRecordSet';
 import { CypherDirective } from '../directives';
 
-describe('the library', () => {
+describe('the middleware', () => {
   test('works', async () => {
     const schema = applyMiddleware(
       makeExecutableSchema({

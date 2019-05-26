@@ -1,15 +1,4 @@
-import {
-  GraphQLFieldResolver,
-  GraphQLResolveInfo,
-  GraphQLSchema,
-} from 'graphql';
 import { v1 } from 'neo4j-driver';
-
-export type GenericResolver = GraphQLFieldResolver<
-  any,
-  any,
-  { [key: string]: any }
->;
 
 export type CypherQuery = {
   cypher: string;
@@ -36,19 +25,6 @@ export type CypherDirectiveArgs = {
 
 export type CypherQueryFieldMap = { [path: string]: CypherQuery };
 
-export type ExtractQueryTraversalInfo = {
-  path: string[];
-  schema: GraphQLSchema;
-};
-
-export type ResolveTraversalInfo = {
-  parent: any;
-  fieldName: string;
-  path: string[];
-  queries: CypherQueryFieldMap;
-  transaction: v1.Transaction;
-};
-
 export type AugmentedContext = { [key: string]: any } & {
   __graphqlCypher: {
     isWrite: boolean;
@@ -61,6 +37,4 @@ export type AugmentedContext = { [key: string]: any } & {
 
   neo4jDriver: v1.Driver;
   cypherContext?: any;
-
-  runCypher?: () => any;
 };
