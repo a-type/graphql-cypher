@@ -1,8 +1,12 @@
 # graphql-cypher
 
-> The following documentation is a hypothetical sketch, none of this works yet, and I may give up and carry on with neo4j-graphql-js. My objective here is to see if I can create something simpler without all the confusing magic and auto-generation.
-
 A simple, no-frills translation layer between GraphQL and Cypher.
+
+> **Note** This library is currently coupled to Neo4j as a backing database, but I'd be happy to accept contributions to decrease that coupling if there is another graph database which uses Cypher that someone would like to support.
+
+> **Note** In its current form, all features of this library require APOC to run. See [Limitations](#limitations)
+
+### Example Schema
 
 ```graphql
 input Pagination {
@@ -57,7 +61,7 @@ type User {
       ]
     )
 
-  settings: UserSettings! # not resolved by cypher
+  settings: UserSettings! @cypherSkip
 }
 
 type Query {
@@ -70,13 +74,83 @@ type Query {
 }
 ```
 
-## Execution phases
+## Key Features
 
-This middleware runs several phases of operations during execution:
+### 🔨 Simple setup
 
-1. **Pre-resolve:** Scan operation selection set for fields which are resolved from Cypher queries. Group contiguous fields into discrete queries to prepare for execution.
-2. **Pre-resolve:** Inject the generated queries, keyed on a field path, into the context of the operation.
-3. **Resolve:** Traverse the resolver tree. If a field is annotated with a `@cypher` directive, check for a matching query based on its path. If such a query exists, execute it and return the result through the resolver. Otherwise, run the provided resolver as usual.
+Attach Cypher resolution directives to an field in your schema and they'll be resolved accordingly, no matter where they are in the query.
+
+### 🌎 Helpful Cypher globals
+
+Important data is added automatically to your Cypher queries for you to reference. In addition to `$args` (the field arguments), you get `parent` (the parent node) and `context` (special values you can add to your GraphQL context to give to every query).
+
+```graphql
+type User {
+  posts(offset: Int = 10): [Post!]!
+    @cypher(
+      statement: "MATCH (parent)-[:HAS_POST]->(p:Post) RETURN p SKIP $args.offset LIMIT $context.globalPageSize"
+    )
+}
+```
+
+### 🔗 Multi-data-source friendly
+
+"Skip" fields which are resolved from data sources external from your Cypher-powered database easily. `graphql-cypher` will plan all the queries and inter-dependencies for you.
+
+Externally-powered fields are even woven back into Cypher via the `parent` variable, just like any normal Cypher query, so you can reference external data just as easily as graph-native data.
+
+```graphql
+type User {
+  # this field is resolved from an external source...
+  settings: UserSettings! @cypherSkip
+}
+
+type UserSettings {
+  account: Account!
+    @cypher(
+      statement: """
+      MATCH (a:Account{id: parent.id}) RETURN a
+      """
+    )
+}
+
+type Query {
+  user(id: ID!): User!
+    @cypher(statement: "MATCH (u:User{id:$args.id}) RETURN u")
+}
+```
+
+### 🔑 Authorization and custom-logic friendly
+
+`graphql-cypher` is simple by default, but it gives you the option to optionally omit fields based on logic you define in a regular old reducer. This means it can better support custom authorization or pre-query logic.
+
+```ts
+const resolvers = {
+  Query: {
+    secret: (parent, args, ctx) => {
+      if (!ctx.isAdmin) {
+        return null;
+      }
+
+      // this function is added to context for you so that you can
+      // customize how you invoke your cypher operation
+      return ctx.runCypher();
+    },
+  },
+};
+```
+
+## Mutations
+
+TODO
+
+## Limitations
+
+- `@cypher` directives rely on the popular APOC library for Neo4j. Chances are if you're running Neo4j, you already have it installed.
+- Using `context.runCypher` to selectively fetch data only prevents the data from being queried if the field is the root field in your operation or the direct descendant of a non-Cypher-powered field. Otherwise, the data will still be fetched, but by omitting `runCypher` you will just not return it.
+  - This could probably be changed, but not within the current middleware model. A new traversal to just resolve the Cypher queries before the main resolvers are called would probably need to be introduced.
+- `@cypher` custom queries are probably not going to be as performant as a hand-written query. But, that is the core tradeoff of the library; it would be labor-intensive if not infeasible to try to anticipate and craft a custom query for every GraphQL query your users make.
+  - One of my first roadmap items is to investigate more 'builder-style' query directives which make a more native query instead of only supporting raw Cypher statements
 
 ---
 

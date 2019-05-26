@@ -31,6 +31,18 @@ const mockJobApplications = {
 export default {
   Person: {
     jobApplications: parent => mockJobApplications[parent.id],
+    /**
+     * An example of a fake 'authorized' field, the context value
+     * must have a special 'permission' to fetch livesIn
+     */
+    livesIn: (parent, args, ctx) => {
+      if (!ctx.isAdmin) {
+        throw new Error("You aren't authorized to view that!");
+      }
+
+      // if the user passed our check, we can delegate to graphql-cypher for the data
+      return ctx.runCypher();
+    },
   },
   Query: {
     jobApplications: () =>
