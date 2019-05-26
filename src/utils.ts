@@ -25,6 +25,7 @@ import {
   isUnionType,
 } from 'graphql';
 import { CypherConditionalStatement } from './types';
+import uuid from 'uuid';
 
 export function isGraphqlScalarType(
   type: GraphQLNamedType
@@ -370,4 +371,37 @@ export const isDefaultResolver = (
   } else {
     return true;
   }
+};
+
+export const getGeneratedArgsFromDirectives = (
+  schemaType: GraphQLObjectType,
+  fieldName: string
+): { [name: string]: any } | null => {
+  const field = schemaType.getFields()[fieldName];
+  if (!field || !field.astNode) {
+    return [];
+  }
+
+  const generateIdDirective = field.astNode.directives
+    ? field.astNode.directives.find(
+        directive => directive.name.value === 'generateId'
+      )
+    : null;
+
+  if (!generateIdDirective) {
+    return null;
+  }
+
+  const generatedIdArgNameArgument =
+    generateIdDirective.arguments &&
+    generateIdDirective.arguments.find(arg => arg.name.value === 'argName');
+
+  const generatedIdArgName =
+    (generatedIdArgNameArgument &&
+      extractArgumentStringValue(generatedIdArgNameArgument)) ||
+    'id';
+
+  return {
+    [generatedIdArgName]: uuid(),
+  };
 };

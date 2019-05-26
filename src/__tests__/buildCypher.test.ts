@@ -6,9 +6,9 @@ describe('building a cypher query', () => {
     const fieldName = 'testUser';
     const query: CypherQuery = {
       cypher: 'MATCH (user:User) RETURN user',
-      params: [],
+      paramNames: [],
       fields: ['id', 'name'],
-      args: {},
+      params: {},
       returnsList: false,
       fieldQueries: {},
     };
@@ -24,15 +24,15 @@ describe('building a cypher query', () => {
     const fieldName = 'testUser';
     const query: CypherQuery = {
       cypher: 'MATCH (user:User) RETURN user',
-      params: [],
+      paramNames: [],
       fields: ['id', 'posts'],
-      args: {},
+      params: {},
       returnsList: false,
       fieldQueries: {
         posts: {
           cypher: 'MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post',
-          params: [],
-          args: {},
+          paramNames: [],
+          params: {},
           returnsList: true,
           fields: ['id', 'title'],
           fieldQueries: {},
@@ -55,8 +55,8 @@ describe('building a cypher query', () => {
     const fieldName = 'testUser';
     const query: CypherQuery = {
       cypher: 'MATCH (user:User{id: $args.id}) RETURN user',
-      params: ['args'],
-      args: { id: 'foo' },
+      paramNames: ['args'],
+      params: { id: 'foo' },
       returnsList: false,
       fields: ['id', 'name'],
       fieldQueries: {},
@@ -73,16 +73,16 @@ describe('building a cypher query', () => {
     const fieldName = 'testUser';
     const query: CypherQuery = {
       cypher: 'MATCH (user:User) RETURN user',
-      params: [],
+      paramNames: [],
       fields: ['id', 'posts'],
-      args: {},
+      params: {},
       returnsList: false,
       fieldQueries: {
         posts: {
           cypher:
             'MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post LIMIT $args.limit',
-          params: ['args'],
-          args: {
+          paramNames: ['args'],
+          params: {
             limit: 10,
           },
           returnsList: true,
@@ -107,9 +107,9 @@ describe('building a cypher query', () => {
     const fieldName = 'testPosts';
     const query: CypherQuery = {
       cypher: 'MATCH (post:Post) RETURN post',
-      params: [],
+      paramNames: [],
       fields: ['id', 'title'],
-      args: {},
+      params: {},
       returnsList: true,
       fieldQueries: {},
     };

@@ -18,6 +18,7 @@ import {
   getNameOrAlias,
   getArgumentsPlusDefaults,
   isListOrWrappedListType,
+  getGeneratedArgsFromDirectives,
 } from './utils';
 import { path } from 'ramda';
 import { getFieldDef } from 'graphql/execution/execute';
@@ -106,6 +107,9 @@ const extractQueriesFromField = ({
       schema,
       variableValues
     );
+
+    const generatedArgs = getGeneratedArgsFromDirectives(parentType, fieldName);
+
     // use arguments to determine the matching cypher statement.
     const { statement: cypher } = getMatchingConditionalCypher(
       cypherDirectives,
@@ -113,12 +117,23 @@ const extractQueriesFromField = ({
       fieldName
     );
 
+    const paramNames: string[] = [];
+    if (field.arguments) {
+      paramNames.push('args');
+    }
+    if (generatedArgs) {
+      paramNames.push('generated');
+    }
+
     currentQuery = {
       cypher,
       returnsList: isListOrWrappedListType(schemaFieldDef.type),
       fields: [],
-      params: field.arguments ? ['args'] : [],
-      args: argValues,
+      paramNames: paramNames,
+      params: {
+        args: argValues,
+        generated: generatedArgs ? generatedArgs : undefined,
+      },
       fieldQueries: {},
     };
 

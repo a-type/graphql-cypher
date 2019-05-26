@@ -1,5 +1,10 @@
 import { GraphQLResolveInfo, defaultFieldResolver } from 'graphql';
-import { isRootField, getFieldPath, isListOrWrappedListType } from './utils';
+import {
+  isRootField as getIsRootField,
+  getFieldPath,
+  isListOrWrappedListType,
+  getGeneratedArgsFromDirectives,
+} from './utils';
 import { extractCypherQueriesFromOperation } from './scanQueries';
 import { AugmentedContext } from './types';
 import { executeCypherQuery } from './executeQuery';
@@ -20,8 +25,9 @@ export const middleware = async (
   info: GraphQLResolveInfo
 ) => {
   const isWrite = info.operation.operation === 'mutation';
+  const isRootField = getIsRootField(info.parentType, info.schema);
 
-  if (isRootField(info.parentType, info.schema)) {
+  if (isRootField) {
     try {
       const cypherQueries = extractCypherQueriesFromOperation(info);
 
@@ -61,6 +67,10 @@ export const middleware = async (
         const cypher = buildCypherQuery({
           fieldName: info.fieldName,
           query: matchingCypherQuery,
+          // we only do a write transaction if this is the mutation root field; while
+          // it's not enforced in GraphQL, it's a resonable assumption that only
+          // the root field of a mutation will alter the graph.
+          isWrite: isWrite && isRootField,
         });
 
         log({
@@ -75,6 +85,7 @@ export const middleware = async (
           parent: parent || null,
           contextValues: context.cypherContext,
         });
+
         const session = context.neo4jDriver.session(isWrite ? 'WRITE' : 'READ');
 
         log({

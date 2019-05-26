@@ -38,25 +38,34 @@ const buildSubqueryParams = ({
  * or
  * apoc.cypher.runFirstColumnMany("MATCH (bar:Bar) RETURN bar", {})
  * (for queries that expect to return a list)
+ * or
+ * apoc.cypher.doIt("CREATE (baz:Baz) RETURN baz", {})
+ * (for write queries)
  * This basically lets us run arbitrary queries in their own context
  */
 const buildSubqueryClause = ({
   query,
   prefix,
   parentName,
+  isWrite,
 }: {
   query: CypherQuery;
   prefix: string;
   parentName?: string;
+  isWrite: boolean;
 }) => {
+  const apocFn = isWrite
+    ? 'apoc.cypher.doIt'
+    : 'apoc.cypher.runFirstColumn' + (query.returnsList ? 'Many' : 'Single');
+
   const parentRename =
     parentName && parentName.startsWith('$')
       ? `WITH $parent AS parent `
       : `WITH {parent} AS parent `;
-  return `apoc.cypher.runFirstColumn${
-    query.returnsList ? 'Many' : 'Single'
-  }("${parentRename}${escapeQuotes(query.cypher)}", {${buildSubqueryParams({
-    params: query.params,
+  return `${apocFn}("${parentRename}${escapeQuotes(
+    query.cypher
+  )}", {${buildSubqueryParams({
+    params: query.paramNames,
     prefix,
     parentName,
   })}})`;
@@ -100,7 +109,12 @@ const buildField = ({
   const listProjection =
     (query.returnsList ? '' : 'head(') +
     listPrefix +
-    buildSubqueryClause({ query, prefix: fieldPrefix, parentName }) +
+    buildSubqueryClause({
+      query,
+      prefix: fieldPrefix,
+      parentName,
+      isWrite: false,
+    }) +
     listInfix +
     fields +
     listSuffix +
@@ -144,7 +158,7 @@ const buildFields = ({
   );
 };
 
-export const buildCypherQuery = ({
+export const buildCypherReadQuery = ({
   fieldName,
   query,
 }: {
@@ -166,12 +180,62 @@ export const buildCypherQuery = ({
 
   return (
     `WITH ` +
-    buildSubqueryClause({ query, prefix, parentName: parentVariableName }) +
+    buildSubqueryClause({
+      query,
+      prefix,
+      parentName: parentVariableName,
+      isWrite: false,
+    }) +
     `${listUnwind} AS \`${safeName}\` ` +
     `RETURN \`${safeName}\` ` +
     buildFields({ prefix, parentName: safeName, query }) +
     ` AS \`${safeName}\``
   );
+};
+
+export const buildCypherWriteQuery = ({
+  fieldName,
+  query,
+}: {
+  fieldName: string;
+  query: CypherQuery;
+}) => {
+  const safeName = safeVar(fieldName);
+  const prefix = safeName + '_';
+  const parentVariableName = '$parent';
+  // if the query doesn't return a list, we will index into the result array's 0th item
+  const onlyTakeFirstItem = query.returnsList ? '' : '[0]';
+
+  return (
+    'CALL ' +
+    buildSubqueryClause({
+      query,
+      prefix,
+      parentName: parentVariableName,
+      isWrite: true,
+    }) +
+    'YIELD value ' +
+    `WITH apoc.map.values(value, [keys(value)[0]])${onlyTakeFirstItem} AS \`${safeName}\` ` +
+    `RETURN \`${safeName}\` ` +
+    buildFields({ prefix, parentName: safeName, query }) +
+    ` AS \`${safeName}\``
+  );
+};
+
+export const buildCypherQuery = ({
+  fieldName,
+  query,
+  isWrite,
+}: {
+  fieldName: string;
+  query: CypherQuery;
+  isWrite: boolean;
+}) => {
+  if (isWrite) {
+    return buildCypherWriteQuery({ fieldName, query });
+  } else {
+    return buildCypherReadQuery({ fieldName, query });
+  }
 };
 
 /**
@@ -185,15 +249,18 @@ const buildPrefixedFieldArgVariables = ({
   prefix: string;
   query: CypherQuery;
 }) => ({
-  [`${prefix}args`]: query.args,
+  [`${prefix}args`]: query.params.args,
+  [`${prefix}generated`]: query.params.generated,
   ...query.fields
     .filter(fieldName => !!query.fieldQueries[fieldName])
     .reduce(
-      (args, fieldName) =>
-        buildPrefixedFieldArgVariables({
+      (args, fieldName) => ({
+        ...args,
+        ...buildPrefixedFieldArgVariables({
           prefix: prefix + fieldName + '_',
           query: query.fieldQueries[fieldName],
         }),
+      }),
       {}
     ),
 });

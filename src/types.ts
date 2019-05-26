@@ -3,9 +3,14 @@ import { v1 } from 'neo4j-driver';
 export type CypherQuery = {
   cypher: string;
   returnsList: boolean;
-  params: string[];
-  args: {
-    [name: string]: any;
+  paramNames: string[];
+  params: {
+    args?: {
+      [name: string]: any;
+    };
+    generated?: {
+      [name: string]: any;
+    };
   };
   fields: string[];
   fieldQueries: {

@@ -5,6 +5,7 @@ export default `
     statements: [CypherConditionalStatement!]
   ) on FIELD_DEFINITION
   directive @cypherSkip on FIELD_DEFINITION
+  directive @generateId(argName: String) on FIELD_DEFINITION
 
   type Person {
     id: ID!
@@ -110,6 +111,19 @@ export default `
     offset: Int
   }
 
+  input PersonCreateInput {
+    firstName: String!
+    lastName: String!
+    age: Int!
+  }
+
+  input PersonUpdateInput {
+    id: ID!
+    firstName: String
+    lastName: String
+    age: Int
+  }
+
   type Query {
     person(id: ID!): Person
       @cypher(
@@ -133,5 +147,28 @@ export default `
       )
 
     jobApplications: [JobApplication!]!
+  }
+
+  type Mutation {
+    createPerson(input: PersonCreateInput!): Person!
+      @generateId(argName: "id")
+      @cypher(
+        statement: """
+        CREATE (person:Person{id: $generated.id})
+        SET person += $args.input
+        RETURN person
+        """
+      )
+
+    updatePerson(input: PersonUpdateInput!): Person!
+      @cypher(
+        statement: """
+        MATCH (person:Person{id: $args.input.id})
+        SET person.firstName = coalesce($args.input.firstName, person.firstName)
+        SET person.lastName = coalesce($args.input.lastName, person.lastName)
+        SET person.age = coalesce($args.input.age, person.age)
+        RETURN person
+        """
+      )
   }
 `;
