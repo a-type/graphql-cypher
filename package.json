@@ -1,6 +1,21 @@
 {
   "name": "graphql-cypher",
+  "description": "A simple but powerful translation layer between GraphQL and Cypher",
+  "keywords": [
+    "graphql",
+    "cypher",
+    "neo4j",
+    "javascript",
+    "typescript"
+  ],
   "version": "0.1.0",
+  "author": {
+    "name": "a-type (Grant Forrest)"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/a-type/graphql-cypher"
+  },
   "main": "dist/index.js",
   "umd:main": "dist/graphql-cypher.umd.production.js",
   "module": "dist/graphql-cypher.es.production.js",
