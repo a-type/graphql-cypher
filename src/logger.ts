@@ -25,7 +25,7 @@ export const log = ({
     );
   } else if (level === 'error') {
     console.error([tag + title, ...details].join('\n'));
-  } else {
+  } else if (level === 'info') {
     console.info(
       [chalk.blue(tag + title), ...details.map(str => chalk.gray(str))].join(
         '\n'
