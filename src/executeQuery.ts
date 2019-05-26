@@ -21,7 +21,6 @@ export const executeCypherQuery = async ({
 
   const data = await transaction(async (tx: v1.Transaction) => {
     const result = await tx.run(cypher, variables);
-    await tx.commit();
     if (result.records && result.records.length) {
       if (isList) {
         return result.records.map(record => record.get(fieldName));

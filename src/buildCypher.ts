@@ -214,7 +214,7 @@ export const buildCypherWriteQuery = ({
       parentName: parentVariableName,
       isWrite: true,
     }) +
-    'YIELD value ' +
+    ' YIELD value ' +
     `WITH apoc.map.values(value, [keys(value)[0]])${onlyTakeFirstItem} AS \`${safeName}\` ` +
     `RETURN \`${safeName}\` ` +
     buildFields({ prefix, parentName: safeName, query }) +

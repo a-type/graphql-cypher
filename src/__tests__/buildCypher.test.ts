@@ -13,7 +13,7 @@ describe('building a cypher query', () => {
       fieldQueries: {},
     };
 
-    expect(buildCypherQuery({ fieldName, query })).toEqual(
+    expect(buildCypherQuery({ fieldName, query, isWrite: false })).toEqual(
       `WITH apoc.cypher.runFirstColumnSingle("WITH $parent AS parent MATCH (user:User) RETURN user", {parent: $parent}) ` +
         `AS \`testUser\` ` +
         `RETURN \`testUser\` {.id, .name} AS \`testUser\``
@@ -40,7 +40,7 @@ describe('building a cypher query', () => {
       },
     };
 
-    expect(buildCypherQuery({ fieldName, query })).toEqual(
+    expect(buildCypherQuery({ fieldName, query, isWrite: false })).toEqual(
       `WITH apoc.cypher.runFirstColumnSingle("WITH $parent AS parent MATCH (user:User) RETURN user", {parent: $parent}) ` +
         `AS \`testUser\` ` +
         `RETURN \`testUser\` {.id, posts: ` +
@@ -56,13 +56,17 @@ describe('building a cypher query', () => {
     const query: CypherQuery = {
       cypher: 'MATCH (user:User{id: $args.id}) RETURN user',
       paramNames: ['args'],
-      params: { id: 'foo' },
+      params: {
+        args: {
+          id: 'foo',
+        },
+      },
       returnsList: false,
       fields: ['id', 'name'],
       fieldQueries: {},
     };
 
-    expect(buildCypherQuery({ fieldName, query })).toEqual(
+    expect(buildCypherQuery({ fieldName, query, isWrite: false })).toEqual(
       `WITH apoc.cypher.runFirstColumnSingle("WITH $parent AS parent MATCH (user:User{id: $args.id}) RETURN user", {args: $testUser_args, parent: $parent}) ` +
         `AS \`testUser\` ` +
         `RETURN \`testUser\` {.id, .name} AS \`testUser\``
@@ -83,7 +87,9 @@ describe('building a cypher query', () => {
             'MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post LIMIT $args.limit',
           paramNames: ['args'],
           params: {
-            limit: 10,
+            args: {
+              limit: 10,
+            },
           },
           returnsList: true,
           fields: ['id', 'title'],
@@ -92,7 +98,7 @@ describe('building a cypher query', () => {
       },
     };
 
-    expect(buildCypherQuery({ fieldName, query })).toEqual(
+    expect(buildCypherQuery({ fieldName, query, isWrite: false })).toEqual(
       `WITH apoc.cypher.runFirstColumnSingle("WITH $parent AS parent MATCH (user:User) RETURN user", {parent: $parent}) ` +
         `AS \`testUser\` ` +
         `RETURN \`testUser\` {.id, posts: ` +
@@ -114,10 +120,64 @@ describe('building a cypher query', () => {
       fieldQueries: {},
     };
 
-    expect(buildCypherQuery({ fieldName, query })).toEqual(
+    expect(buildCypherQuery({ fieldName, query, isWrite: false })).toEqual(
       `WITH apoc.cypher.runFirstColumnMany("WITH $parent AS parent MATCH (post:Post) RETURN post", {parent: $parent}) ` +
         `AS x UNWIND x AS \`testPosts\` ` +
         `RETURN \`testPosts\` {.id, .title} AS \`testPosts\``
+    );
+  });
+
+  test('works with a write query', () => {
+    const fieldName = 'testCreateUser';
+    const query: CypherQuery = {
+      cypher: 'CREATE (user:User{name: $args.name}) RETURN user',
+      paramNames: ['args'],
+      params: {
+        args: {
+          name: 'blah',
+        },
+      },
+      fields: ['name'],
+      returnsList: false,
+      fieldQueries: {},
+    };
+
+    expect(buildCypherQuery({ fieldName, query, isWrite: true })).toEqual(
+      `CALL apoc.cypher.doIt("WITH $parent AS parent CREATE (user:User{name: $args.name}) RETURN user", {args: $testCreateUser_args, parent: $parent}) ` +
+        `YIELD value WITH apoc.map.values(value, [keys(value)[0]])[0] AS \`testCreateUser\` ` +
+        `RETURN \`testCreateUser\` {.name} AS \`testCreateUser\``
+    );
+  });
+
+  test('works with a nested write query', () => {
+    const fieldName = 'testCreateUser';
+    const query: CypherQuery = {
+      cypher: 'CREATE (user:User{name: $args.name}) RETURN user',
+      paramNames: ['args'],
+      params: {
+        args: {
+          name: 'blah',
+        },
+      },
+      fields: ['name', 'group'],
+      returnsList: false,
+      fieldQueries: {
+        group: {
+          cypher: 'MATCH (parent)-[:BELONGS_TO]->(group:Group) RETURN group',
+          paramNames: [],
+          params: {},
+          fields: ['id', 'name'],
+          returnsList: false,
+          fieldQueries: {},
+        },
+      },
+    };
+
+    expect(buildCypherQuery({ fieldName, query, isWrite: true })).toEqual(
+      `CALL apoc.cypher.doIt("WITH $parent AS parent CREATE (user:User{name: $args.name}) RETURN user", {args: $testCreateUser_args, parent: $parent}) ` +
+        `YIELD value WITH apoc.map.values(value, [keys(value)[0]])[0] AS \`testCreateUser\` ` +
+        `RETURN \`testCreateUser\` {.name, group: ` +
+        `head([testCreateUser_group IN apoc.cypher.runFirstColumnSingle(\"WITH {parent} AS parent MATCH (parent)-[:BELONGS_TO]->(group:Group) RETURN group\", {parent: testCreateUser}) | testCreateUser_group {.id, .name}])} AS \`testCreateUser\``
     );
   });
 });
