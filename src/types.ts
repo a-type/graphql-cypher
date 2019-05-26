@@ -51,7 +51,6 @@ export type ResolveTraversalInfo = {
 
 export type AugmentedContext = { [key: string]: any } & {
   __graphqlCypher: {
-    session: v1.Session;
     isWrite: boolean;
     cypherQueries: CypherQueryFieldMap;
     parentQuery: CypherQuery | null;

@@ -25,19 +25,19 @@ export const executeCypherQuery = async ({
   if (debug) {
     console.debug(
       [
-        chalk.blue(`[GraphQL-Cypher]`) +
-          `Running ${write ? 'write' : 'read'} transaction:`,
-        '',
+        chalk.blue(
+          `[GraphQL-Cypher] Running ${write ? 'write' : 'read'} transaction:`
+        ),
         chalk.grey(cypher),
-        '',
         chalk.green(`Parameters:`),
         chalk.grey(JSON.stringify(variables)),
       ].join('\n')
     );
   }
 
-  const data = await transaction(async tx => {
+  const data = await transaction(async (tx: v1.Transaction) => {
     const result = await tx.run(cypher, variables);
+    await tx.commit();
     if (result.records && result.records.length) {
       if (isList) {
         return result.records.map(record => record.get(fieldName));

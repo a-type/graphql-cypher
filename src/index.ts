@@ -13,14 +13,13 @@ export const middleware = async (
   context: AugmentedContext,
   info: GraphQLResolveInfo
 ) => {
+  const isWrite = info.operation.operation === 'mutation';
+
   if (isRootField(info.parentType, info.schema)) {
-    const isWrite = info.operation.operation === 'mutation';
-    const session = context.neo4jDriver.session(isWrite ? 'WRITE' : 'READ');
     context.__graphqlCypher = {
       cypherQueries: extractCypherQueriesFromOperation(info),
       parentQuery: null,
       resultCache: {},
-      session,
       isWrite,
     };
     if (__DEV__) {
@@ -61,14 +60,16 @@ export const middleware = async (
           parent: parent || null,
           contextValues: context.cypherContext,
         });
+        const session = context.neo4jDriver.session(isWrite ? 'WRITE' : 'READ');
         const data = await executeCypherQuery({
           cypher,
           fieldName: info.fieldName,
           variables: cypherVariables,
-          session: context.__graphqlCypher.session,
+          session,
           isList: isListOrWrappedListType(info.returnType),
           debug: __DEV__,
         });
+        session.close();
         context.__graphqlCypher.resultCache[pathString] = data;
         return data;
       } catch (err) {
