@@ -326,3 +326,7 @@ The package is optimized and bundled with Rollup into multiple formats (CommonJS
 
 Runs the test watcher (Jest) in an interactive mode.
 By default, runs tests related to files changed since the last commit.
+
+### `npm run test:integration`
+
+This library has a full integration tests suite against a real Neo4j database. To run it, you need to have Docker started. It will manage creating Neo4j containers and removing them as needed.
