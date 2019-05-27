@@ -295,7 +295,7 @@ type Mutation {
 
 ## Inspiration
 
-Obviously the official [`neo4j-graphql-js`](https://github.com/neo4j-graphql/neo4j-graphql-js) was a huge inspiration for this library. I learned a lot by reading over their unit tests and source code, without which I would probably have struggled for far longer trying to understand how to craft the underlying Cypher queries.
+Obviously the official [`neo4j-graphql-js`](https://github.com/neo4j-graphql/neo4j-graphql-js) was a huge inspiration for this library. I learned a lot by reading over their output queries, without which I would probably have struggled for far longer trying to understand how to craft the underlying Cypher queries for this library.
 
 `neo4j-graphql-js` still has a lot of great features which I don't intend to bring to `graphql-cypher`, namely things like automated generation with convention-based parameters. I hope that `graphql-cypher` will become a tool geared toward a specific audience of people like me who want full control over their app, and `neo4j-graphql-js` can continue to evolve in the direction of auto-generated schemas and turnkey prototyping solutions.
 
