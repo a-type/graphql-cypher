@@ -1,6 +1,6 @@
 import { v1 } from 'neo4j-driver';
 
-export type CypherQuery = {
+export type CustomCypherQuery = {
   cypher: string;
   returnsList: boolean;
   paramNames: string[];
@@ -14,7 +14,7 @@ export type CypherQuery = {
   };
   fields: string[];
   fieldQueries: {
-    [fieldName: string]: CypherQuery;
+    [fieldName: string]: CustomCypherQuery;
   };
 };
 
@@ -28,13 +28,13 @@ export type CypherDirectiveArgs = {
   statements?: CypherConditionalStatement[];
 };
 
-export type CypherQueryFieldMap = { [path: string]: CypherQuery };
+export type CypherQueryFieldMap = { [path: string]: CustomCypherQuery };
 
 export type AugmentedContext = { [key: string]: any } & {
   __graphqlCypher: {
     isWrite: boolean;
     cypherQueries: CypherQueryFieldMap;
-    parentQuery: CypherQuery | null;
+    parentQuery: CustomCypherQuery | null;
     resultCache: {
       [fieldName: string]: any;
     };

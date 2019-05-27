@@ -1,7 +1,7 @@
 import {
   CypherQueryFieldMap,
   CypherConditionalStatement,
-  CypherQuery,
+  CustomCypherQuery,
 } from './types';
 import {
   GraphQLResolveInfo,
@@ -63,7 +63,7 @@ type ExtractFromFieldParams = {
   schema: GraphQLSchema;
   path: string[];
   fragments: { [key: string]: FragmentDefinitionNode };
-  activeQuery: CypherQuery | undefined;
+  activeQuery: CustomCypherQuery | undefined;
 };
 
 const extractQueriesFromField = ({
@@ -97,7 +97,7 @@ const extractQueriesFromField = ({
     fieldName
   );
 
-  let currentQuery: CypherQuery | undefined = undefined;
+  let currentQuery: CustomCypherQuery | undefined = undefined;
 
   // any field with a @cypher directive has something to add to the query
   if (cypherDirectives.length) {
@@ -174,7 +174,7 @@ type ExtractFromSelectionSetParams = {
   schema: GraphQLSchema;
   path: string[];
   fragments: { [key: string]: FragmentDefinitionNode };
-  activeQuery: CypherQuery | undefined;
+  activeQuery: CustomCypherQuery | undefined;
 };
 
 const extractQueriesFromSelectionSet = ({

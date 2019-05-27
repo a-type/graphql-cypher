@@ -1,4 +1,4 @@
-import { CypherQuery } from './types';
+import { CustomCypherQuery } from './types';
 
 const escapeQuotes = (string: string) => string.replace(/"/g, '\\"');
 const safeVar = (v: any) => {
@@ -49,7 +49,7 @@ const buildSubqueryClause = ({
   parentName,
   isWrite,
 }: {
-  query: CypherQuery;
+  query: CustomCypherQuery;
   prefix: string;
   parentName?: string;
   isWrite: boolean;
@@ -87,7 +87,7 @@ const buildField = ({
   fieldName: string;
   prefix: string;
   parentName: string;
-  query?: CypherQuery;
+  query?: CustomCypherQuery;
 }): string => {
   if (!query) {
     return `.${fieldName}`;
@@ -136,7 +136,7 @@ const buildFields = ({
 }: {
   prefix: string;
   parentName: string;
-  query: CypherQuery;
+  query: CustomCypherQuery;
 }): string => {
   if (!query.fields.length) {
     return '';
@@ -163,7 +163,7 @@ export const buildCypherReadQuery = ({
   query,
 }: {
   fieldName: string;
-  query: CypherQuery;
+  query: CustomCypherQuery;
 }) => {
   const safeName = safeVar(fieldName);
   const prefix = safeName + '_';
@@ -198,7 +198,7 @@ export const buildCypherWriteQuery = ({
   query,
 }: {
   fieldName: string;
-  query: CypherQuery;
+  query: CustomCypherQuery;
 }) => {
   const safeName = safeVar(fieldName);
   const prefix = safeName + '_';
@@ -228,7 +228,7 @@ export const buildCypherQuery = ({
   isWrite,
 }: {
   fieldName: string;
-  query: CypherQuery;
+  query: CustomCypherQuery;
   isWrite: boolean;
 }) => {
   if (isWrite) {
@@ -247,7 +247,7 @@ const buildPrefixedFieldArgVariables = ({
   query,
 }: {
   prefix: string;
-  query: CypherQuery;
+  query: CustomCypherQuery;
 }) => ({
   [`${prefix}args`]: query.params.args,
   [`${prefix}generated`]: query.params.generated,
@@ -272,7 +272,7 @@ export const buildPrefixedVariables = ({
   contextValues,
 }: {
   fieldName: string;
-  query: CypherQuery;
+  query: CustomCypherQuery;
   parent?: any;
   contextValues?: any;
 }) => {

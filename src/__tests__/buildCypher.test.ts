@@ -1,10 +1,10 @@
-import { CypherQuery } from '../types';
+import { CustomCypherQuery } from '../types';
 import { buildCypherQuery } from '../buildCypher';
 
 describe('building a cypher query', () => {
   test('works for a single query', () => {
     const fieldName = 'testUser';
-    const query: CypherQuery = {
+    const query: CustomCypherQuery = {
       cypher: 'MATCH (user:User) RETURN user',
       paramNames: [],
       fields: ['id', 'name'],
@@ -22,7 +22,7 @@ describe('building a cypher query', () => {
 
   test('works for a nested field query', () => {
     const fieldName = 'testUser';
-    const query: CypherQuery = {
+    const query: CustomCypherQuery = {
       cypher: 'MATCH (user:User) RETURN user',
       paramNames: [],
       fields: ['id', 'posts'],
@@ -53,7 +53,7 @@ describe('building a cypher query', () => {
 
   test('works with params', () => {
     const fieldName = 'testUser';
-    const query: CypherQuery = {
+    const query: CustomCypherQuery = {
       cypher: 'MATCH (user:User{id: $args.id}) RETURN user',
       paramNames: ['args'],
       params: {
@@ -75,7 +75,7 @@ describe('building a cypher query', () => {
 
   test('works with nested params', () => {
     const fieldName = 'testUser';
-    const query: CypherQuery = {
+    const query: CustomCypherQuery = {
       cypher: 'MATCH (user:User) RETURN user',
       paramNames: [],
       fields: ['id', 'posts'],
@@ -111,7 +111,7 @@ describe('building a cypher query', () => {
 
   test('works with top-level list field', () => {
     const fieldName = 'testPosts';
-    const query: CypherQuery = {
+    const query: CustomCypherQuery = {
       cypher: 'MATCH (post:Post) RETURN post',
       paramNames: [],
       fields: ['id', 'title'],
@@ -129,7 +129,7 @@ describe('building a cypher query', () => {
 
   test('works with a write query', () => {
     const fieldName = 'testCreateUser';
-    const query: CypherQuery = {
+    const query: CustomCypherQuery = {
       cypher: 'CREATE (user:User{name: $args.name}) RETURN user',
       paramNames: ['args'],
       params: {
@@ -151,7 +151,7 @@ describe('building a cypher query', () => {
 
   test('works with a nested write query', () => {
     const fieldName = 'testCreateUser';
-    const query: CypherQuery = {
+    const query: CustomCypherQuery = {
       cypher: 'CREATE (user:User{name: $args.name}) RETURN user',
       paramNames: ['args'],
       params: {
