@@ -1,5 +1,5 @@
 import { v1 as neo4j } from 'neo4j-driver';
-import { initialize, cleanup } from './neo4j/manage';
+import { initialize, cleanup, BOLT_PORT } from './neo4j/manage';
 import schema from './schema';
 import { graphql } from 'graphql';
 import { people } from './neo4j/seed';
@@ -7,7 +7,7 @@ import { people } from './neo4j/seed';
 const TWO_MINUTES = 2 * 60 * 1000;
 
 describe('write mutations', () => {
-  const driver = neo4j.driver('bolt://localhost:7687');
+  const driver = neo4j.driver('bolt://localhost:' + BOLT_PORT);
   let session: neo4j.Session;
 
   beforeEach(async done => {

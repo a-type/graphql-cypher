@@ -121,7 +121,11 @@ const extractQueriesFromField = ({
       variableValues
     );
 
-    const generatedArgs = getGeneratedArgsFromDirectives(parentType, fieldName);
+    const generatedArgs = getGeneratedArgsFromDirectives(
+      parentType,
+      fieldName,
+      config.directiveNames.generateId
+    );
 
     // use arguments to determine the matching cypher statement.
     const { statement: cypher } = getMatchingConditionalCypher(
@@ -132,18 +136,13 @@ const extractQueriesFromField = ({
     );
 
     const paramNames: string[] = [];
-    if (field.arguments) {
-      paramNames.push('args');
-    }
-    if (generatedArgs) {
-      paramNames.push('generated');
-    }
-
     const params: CustomCypherParams = {};
     if (Object.keys(argValues).length) {
+      paramNames.push('args');
       params.args = argValues;
     }
     if (generatedArgs) {
+      paramNames.push('generated');
       params.generated = generatedArgs;
     }
 
@@ -154,7 +153,7 @@ const extractQueriesFromField = ({
       paramNames: paramNames,
       params,
       fieldQueries: {},
-    };
+    } as CustomCypherQuery;
 
     if (activeQuery) {
       activeQuery.fieldQueries[fieldName] = currentQuery;
@@ -238,6 +237,7 @@ export const extractCypherQueriesFromOperation = (
     directiveNames: {
       cypher: 'cypher',
       cypherSkip: 'cypherSkip',
+      generateId: 'generateId',
     },
   }
 ): CypherQueryFieldMap => {

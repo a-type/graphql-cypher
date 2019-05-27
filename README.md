@@ -225,6 +225,39 @@ We've already seen the `$args` parameter, which is available to our `@cypher` st
 
 - Don't specify property selections on the returned node ("`{.id, .name}`", etc). These will be managed by the library.
 
+#### Relations
+
+You can query properties on relations using the same tools as nodes. Instead of returning a node from your custom Cypher statement, return the relation instead:
+
+```graphql
+type User {
+  friendships: [Friendship!]!
+    @cypher(
+      statement: """
+      MATCH (parent)-[rel:FRIEND_OF]->(:User)
+      RETURN rel
+      """
+    )
+}
+```
+
+On the type that represents the relationships, you can include fields which will be drawn from the properties of that relationship as usual. To continue along the path to the connected node, add a `@cypher` directive and match the `parent` relationship:
+
+```graphql
+type Friendship {
+  type: String!
+  friend: User!
+    @cypher(
+      statement: """
+      MATCH ()-[parent]->(friend:User)
+      RETURN friend
+      """
+    )
+}
+```
+
+> **Caveat:** Relationship types done in this way will end up making more queries in the database due to the path being separated between two different Cypher statements. This is unfortunate, but required by the design of this library. I haven't yet found a simple way to integrate relationships without introducing a bunch of semantic confusion to the library, and I really do like the simplicity of the semantics with this version, despite the drawbacks.
+
 ### Mutations
 
 Mutations are pretty similar to queries. In the root field, you'll want to write some Cypher that will modify your graph. From there, any sub-selections in your mutation will be added to the mutation Cypher query just like they would have in a read query.

@@ -5,6 +5,7 @@ import { PassThrough } from 'stream';
 import seed from './seed';
 
 const docker = new Docker({});
+export const BOLT_PORT = '7687';
 
 export const initialize = async () => {
   await emptyDir(pathResolve(__dirname, './mountedVolumes/data'));
@@ -29,7 +30,7 @@ export const initialize = async () => {
     outputStream,
     {
       Labels: {
-        'neo4j-migrate-test': 'true',
+        'graphql-cypher-test': 'true',
       },
       Env: [
         'NEO4J_AUTH=none',
@@ -39,9 +40,9 @@ export const initialize = async () => {
       ],
       HostConfig: {
         PortBindings: {
-          '7687/tcp': [
+          [`7687/tcp`]: [
             {
-              HostPort: '7687',
+              HostPort: BOLT_PORT,
             },
           ],
         },
@@ -89,7 +90,7 @@ export const cleanup = async () => {
   const containers = await docker.listContainers();
   await Promise.all(
     containers.map(async container => {
-      if (container.Labels['neo4j-migrate-test']) {
+      if (container.Labels['graphql-cypher-test']) {
         console.log('Terminating container...');
         const realContainer = await docker.getContainer(container.Id);
         await realContainer.kill();

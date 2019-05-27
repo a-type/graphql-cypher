@@ -48,6 +48,19 @@ export const userLivesIn = [
   [people[4].id, countries[2].id],
 ];
 
+export const friendships = [
+  [people[0].id, people[1].id, 'acquaintance'],
+  [people[0].id, people[2].id, 'best'],
+  [people[1].id, people[0].id, 'acquaintance'],
+  [people[1].id, people[3].id, 'best'],
+  [people[2].id, people[0].id, 'best'],
+  [people[2].id, people[4].id, 'acquaintance'],
+  [people[3].id, people[1].id, 'best'],
+  [people[3].id, people[4].id, 'acquaintance'],
+  [people[4].id, people[2].id, 'acquaintance'],
+  [people[4].id, people[3].id, 'acquaintance'],
+];
+
 export const companySeeks = [
   [companies[0].id, skills[0].id],
   [companies[0].id, skills[3].id],
@@ -185,6 +198,17 @@ export default async () => {
       `,
       {
         companyLocatedIn,
+      }
+    );
+
+    await tx.run(
+      `
+      UNWIND $friendships as friendship
+      MATCH (p:Person {id: friendship[0]}), (p2:Person {id: friendship[1]})
+      CREATE (p)-[:FRIEND_OF {type: friendship[2]}]->(p2)
+      `,
+      {
+        friendships,
       }
     );
   });

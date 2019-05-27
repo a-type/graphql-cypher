@@ -32,37 +32,40 @@ const buildSubqueryParams = ({
   return paramTuples.map(([name, value]) => `${name}: ${value}`).join(', ');
 };
 
-/**
- * Creates a clause that runs a custom query statement:
- * apoc.cypher.runFirstColumnSingle("MATCH (foo:Foo {id: \"bar\"}) RETURN foo", {foo: $foo, parent: parentVar})
- * or
- * apoc.cypher.runFirstColumnMany("MATCH (bar:Bar) RETURN bar", {})
- * (for queries that expect to return a list)
- * or
- * apoc.cypher.doIt("CREATE (baz:Baz) RETURN baz", {})
- * (for write queries)
- * This basically lets us run arbitrary queries in their own context
- */
+const buildParentRename = (parentName?: string) =>
+  parentName && parentName.startsWith('$')
+    ? `WITH $parent AS parent`
+    : `WITH {parent} AS parent`;
+
+const buildMultiValueYieldMapper = ({
+  returnNames,
+}: {
+  returnNames: string[];
+}) => {
+  const yieldedNames = returnNames
+    .map(
+      (name, idx) =>
+        `apoc.map.values(value, [keys(value)[${idx}]])[0] AS \`${name}\``
+    )
+    .join(', ');
+
+  return 'YIELD value ' + `WITH ${yieldedNames}`;
+};
+
 const buildSubqueryClause = ({
   query,
   prefix,
   parentName,
-  isWrite,
 }: {
   query: CustomCypherQuery;
   prefix: string;
   parentName?: string;
-  isWrite: boolean;
-}) => {
-  const apocFn = isWrite
-    ? 'apoc.cypher.doIt'
-    : 'apoc.cypher.runFirstColumn' + (query.returnsList ? 'Many' : 'Single');
+}): string => {
+  const parentRename = buildParentRename(parentName);
+  const apocFn =
+    'apoc.cypher.runFirstColumn' + (query.returnsList ? 'Many' : 'Single');
 
-  const parentRename =
-    parentName && parentName.startsWith('$')
-      ? `WITH $parent AS parent `
-      : `WITH {parent} AS parent `;
-  return `${apocFn}("${parentRename}${escapeQuotes(
+  return `${apocFn}("${parentRename} ${escapeQuotes(
     query.cypher
   )}", {${buildSubqueryParams({
     params: query.paramNames,
@@ -113,7 +116,6 @@ const buildField = ({
       query,
       prefix: fieldPrefix,
       parentName,
-      isWrite: false,
     }) +
     listInfix +
     fields +
@@ -184,12 +186,39 @@ export const buildCypherReadQuery = ({
       query,
       prefix,
       parentName: parentVariableName,
-      isWrite: false,
     }) +
     `${listUnwind} AS \`${safeName}\` ` +
     `RETURN \`${safeName}\` ` +
     buildFields({ prefix, parentName: safeName, query }) +
     ` AS \`${safeName}\``
+  );
+};
+
+const buildWriteQueryClause = ({
+  query,
+  prefix,
+  parentName,
+  yieldName,
+}: {
+  query: CustomCypherQuery;
+  prefix: string;
+  parentName?: string;
+  yieldName: string;
+}) => {
+  const parentRename = buildParentRename(parentName);
+
+  return (
+    `apoc.cypher.doIt("${parentRename} ${escapeQuotes(
+      query.cypher
+    )}", {${buildSubqueryParams({
+      params: query.paramNames,
+      prefix,
+      parentName,
+    })}}) ` +
+    buildMultiValueYieldMapper({
+      returnNames: [yieldName],
+    }) +
+    ` RETURN \`${yieldName}\` `
   );
 };
 
@@ -203,20 +232,15 @@ export const buildCypherWriteQuery = ({
   const safeName = safeVar(fieldName);
   const prefix = safeName + '_';
   const parentVariableName = '$parent';
-  // if the query doesn't return a list, we will index into the result array's 0th item
-  const onlyTakeFirstItem = query.returnsList ? '' : '[0]';
 
   return (
     'CALL ' +
-    buildSubqueryClause({
+    buildWriteQueryClause({
       query,
       prefix,
       parentName: parentVariableName,
-      isWrite: true,
+      yieldName: safeName,
     }) +
-    ' YIELD value ' +
-    `WITH apoc.map.values(value, [keys(value)[0]])${onlyTakeFirstItem} AS \`${safeName}\` ` +
-    `RETURN \`${safeName}\` ` +
     buildFields({ prefix, parentName: safeName, query }) +
     ` AS \`${safeName}\``
   );

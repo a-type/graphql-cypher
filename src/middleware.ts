@@ -19,6 +19,7 @@ export const createMiddleware = (
     directiveNames: {
       cypher: 'cypher',
       cypherSkip: 'cypherSkip',
+      generateId: 'generateId',
     },
   }
 ) => async (
@@ -107,6 +108,13 @@ export const createMiddleware = (
           session,
           isList: isListOrWrappedListType(info.returnType),
         });
+
+        log({
+          title: `Query response data`,
+          level: 'debug',
+          details: [JSON.stringify(data)],
+        });
+
         session.close();
         context.__graphqlCypher.resultCache[pathString] = data;
         return data;

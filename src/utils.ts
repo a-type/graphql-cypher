@@ -89,7 +89,7 @@ export const getCypherStatementsFromDirective = (
 
   const cypherDirective = field.astNode.directives
     ? field.astNode.directives.find(
-        directive => directive.name.value === directiveName
+        directive => directiveName === directive.name.value
       )
     : null;
 
@@ -377,7 +377,8 @@ export const isDefaultResolver = (
 
 export const getGeneratedArgsFromDirectives = (
   schemaType: GraphQLObjectType,
-  fieldName: string
+  fieldName: string,
+  generateIdDirectiveName: string = 'generateId'
 ): { [name: string]: any } | null => {
   const field = schemaType.getFields()[fieldName];
   if (!field || !field.astNode) {
@@ -386,7 +387,7 @@ export const getGeneratedArgsFromDirectives = (
 
   const generateIdDirective = field.astNode.directives
     ? field.astNode.directives.find(
-        directive => directive.name.value === 'generateId'
+        directive => directive.name.value === generateIdDirectiveName
       )
     : null;
 

@@ -13,6 +13,7 @@ const expectCypher = async (
   directiveNames: DirectiveNames = {
     cypher: 'cypher',
     cypherSkip: 'cypherSkip',
+    generateId: 'generateId',
   }
 ) => {
   const finalTypeDefs = typeDefs
@@ -195,6 +196,7 @@ LIMIT $args.pagination.first`,
       {
         cypher: 'myCypher',
         cypherSkip: 'myCypherSkip',
+        generateId: 'myGenerateId',
       }
     );
   });
@@ -256,7 +258,7 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $parent.userId}) RETURN user',
         fields: ['id', 'name'],
         returnsList: false,
-        paramNames: ['args'],
+        paramNames: [],
         params: {},
         fieldQueries: {},
       },
@@ -347,7 +349,7 @@ LIMIT $args.pagination.first`,
       'alias,settings,alias2': {
         cypher: 'MATCH (user:User {id: $parent.userId}) RETURN user',
         fields: ['id'],
-        paramNames: ['args'],
+        paramNames: [],
         returnsList: false,
         params: {},
         fieldQueries: {},

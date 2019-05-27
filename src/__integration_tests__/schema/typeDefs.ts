@@ -6,6 +6,11 @@ export default `
   ) on FIELD_DEFINITION
   directive @cypherSkip on FIELD_DEFINITION
   directive @generateId(argName: String) on FIELD_DEFINITION
+  directive @relation(nodeField: String) on OBJECT
+  directive @cypherRelation(
+    statement: String
+    statements: [CypherConditionalStatement!]
+  ) on FIELD_DEFINITION
 
   type Person {
     id: ID!
@@ -25,8 +30,25 @@ export default `
         MATCH (parent)-[:LIVES_IN]->(country:Country) RETURN country
         """
       )
+    friendships: [UserFriendship!]!
+      @cypher(
+        statement: """
+        MATCH (parent)-[rel:FRIEND_OF]->(:Person)
+        RETURN rel
+        """
+      )
 
     jobApplications: [JobApplication!]! @cypherSkip
+  }
+
+  type UserFriendship {
+    type: String!
+    person: Person! @cypher(
+      statement: """
+      MATCH ()-[parent]->(person:Person)
+      RETURN person
+      """
+    )
   }
 
   type Skill {
