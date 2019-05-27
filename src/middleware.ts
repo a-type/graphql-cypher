@@ -3,7 +3,6 @@ import {
   isRootField as getIsRootField,
   getFieldPath,
   isListOrWrappedListType,
-  getGeneratedArgsFromDirectives,
 } from './utils';
 import { extractCypherQueriesFromOperation } from './scanQueries';
 import { AugmentedContext } from './types';

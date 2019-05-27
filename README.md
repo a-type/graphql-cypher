@@ -117,7 +117,24 @@ import schema from './my-schema';
 const schemaWithMiddleware = applyMiddleware(schema, cypherMiddleware);
 ```
 
-With the middleware installed, you're ready to begin adding directives to your schema. Find a field you want to resolve with Cypher and create your directive.
+With the middleware installed, you'll now need to add this library's custom directives. You may need to check documentation for your GraphQL library on how to do this. An example is provided below with the widely-used `graphql-tools` `makeExecutableSchema`.
+
+**Using makeExecutableSchema**
+
+```ts
+import { CypherDirective } from 'graphql-cypher';
+import { makeExecutableSchema } from 'graphql-tools';
+
+const schema = makeExecutableSchema({
+  typeDefs,
+  resolvers,
+  schemaDirectives: {
+    cypher: CypherDirective,
+  },
+});
+```
+
+Now you're ready to begin adding directives to your schema. Find a field you want to resolve with Cypher and create your directive.
 
 ```graphql
 type Query {
