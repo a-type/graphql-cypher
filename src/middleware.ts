@@ -5,18 +5,23 @@ import {
   isListOrWrappedListType,
 } from './utils';
 import { extractCypherQueriesFromOperation } from './scanQueries';
-import { AugmentedContext } from './types';
+import { AugmentedContext, DirectiveNames } from './types';
 import { executeCypherQuery } from './executeQuery';
 import { buildCypherQuery, buildPrefixedVariables } from './buildCypher';
 import { log } from './logger';
 
-/**
- * This middleware is made to the graphql-middleware spec and can be
- * used out of the box with graphql-yoga servers, or added to any
- * schema using graphql-middleware.
- * https://github.com/prisma/graphql-middleware
- */
-export const middleware = async (
+export type MiddlewareConfig = {
+  directiveNames: DirectiveNames;
+};
+
+export const createMiddleware = (
+  config: MiddlewareConfig = {
+    directiveNames: {
+      cypher: 'cypher',
+      cypherSkip: 'cypherSkip',
+    },
+  }
+) => async (
   resolve: Function,
   parent: any,
   args: { [key: string]: any },
@@ -28,7 +33,9 @@ export const middleware = async (
 
   if (isRootField) {
     try {
-      const cypherQueries = extractCypherQueriesFromOperation(info);
+      const cypherQueries = extractCypherQueriesFromOperation(info, {
+        directiveNames: config.directiveNames,
+      });
 
       context.__graphqlCypher = {
         cypherQueries,
@@ -121,3 +128,11 @@ export const middleware = async (
   const result = await resolve(parent, args, { ...context, runCypher }, info);
   return result;
 };
+
+/**
+ * This middleware is made to the graphql-middleware spec and can be
+ * used out of the box with graphql-yoga servers, or added to any
+ * schema using graphql-middleware.
+ * https://github.com/prisma/graphql-middleware
+ */
+export const middleware = createMiddleware();

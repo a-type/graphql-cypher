@@ -16,7 +16,7 @@ Attach Cypher resolution directives to an field in your schema and they'll be re
 
 ### 🌎 Helpful Cypher globals
 
-Important data is added automatically to your Cypher queries for you to reference. In addition to `$args` (the field arguments), you get `parent` (the parent node) and `context` (special values you can add to your GraphQL context to give to every query).
+Important data is added automatically to your Cypher queries for you to reference. In addition to `$args` (the field arguments), you get `parent` (the parent node) and `$context` (special values you can add to your GraphQL context to give to every query).
 
 ```graphql
 type User {
@@ -39,11 +39,13 @@ type User {
   settings: UserSettings! @cypherSkip
 }
 
+# suppose UserSettings is fetched from an external DB or API and
+# has a shape like {accountId: String!, userId: String!}
 type UserSettings {
   account: Account!
     @cypher(
       statement: """
-      MATCH (a:Account{id: parent.id}) RETURN a
+      MATCH (a:Account{id: parent.accountId}) RETURN a
       """
     )
 }
@@ -56,7 +58,7 @@ type Query {
 
 ### 🔑 Authorization friendly
 
-`graphql-cypher` is simple by default, but it gives you the option to optionally omit fields based on logic you define in a regular old reducer. This means it can better support custom authorization or pre-query logic.
+`graphql-cypher` doesn't require any resolvers by default, but it gives you the option to optionally omit fields based on logic you define in a regular old GraphQL resolver. This means it can better support custom authorization or pre/post-query logic.
 
 ```ts
 const resolvers = {
@@ -74,12 +76,13 @@ const resolvers = {
 };
 ```
 
+_There are limitations to this functionality, please see [Limitations](#limitations)_
+
 ## Goals
 
 - Support application-focused use cases, giving users as much control as possible over their GraphQL query and mutation contracts
 - Make it dead simple for a user familiar with Cypher to start resolving complex GraphQL queries with next to no business logic
 - Support multi-data-source apps, letting users choose which data store is the right fit for each part of their GraphQL schema and stitch them together with ease
-- Allow users to utilize resolvers to write logic surrounding their data access when it's necessary, without hacky workarounds
 
 ## Documentation
 
@@ -146,6 +149,19 @@ type Query {
     )
 }
 ```
+
+> **Renaming the directives**: if the default directive names don't work for you (for instance, if you're still using `neo4j-graphql-js` `@cypher` directive for part of your schema), you can rename them. Just assign the directives to different properties in `schemaDirectives`, and then create a configured middleware by importing `createMiddleware` from `graphql-cypher` and providing a config object.
+>
+> _Example:_
+>
+> ```
+> const customMiddleware = createMiddleware({
+>   directiveNames: {
+>     cypher: 'myCypher',
+>     cypherSkip: 'myCypherSkip'
+>   }
+> });
+> ```
 
 You don't need to add a resolver. Make a query against your schema and see what happens!
 

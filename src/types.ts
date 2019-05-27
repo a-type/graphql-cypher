@@ -1,17 +1,19 @@
 import { v1 } from 'neo4j-driver';
 
+export type CustomCypherParams = {
+  args?: {
+    [name: string]: any;
+  };
+  generated?: {
+    [name: string]: any;
+  };
+};
+
 export type CustomCypherQuery = {
   cypher: string;
   returnsList: boolean;
   paramNames: string[];
-  params: {
-    args?: {
-      [name: string]: any;
-    };
-    generated?: {
-      [name: string]: any;
-    };
-  };
+  params: CustomCypherParams;
   fields: string[];
   fieldQueries: {
     [fieldName: string]: CustomCypherQuery;
@@ -42,4 +44,9 @@ export type AugmentedContext = { [key: string]: any } & {
 
   neo4jDriver: v1.Driver;
   cypherContext?: any;
+};
+
+export type DirectiveNames = {
+  cypher: string;
+  cypherSkip: string;
 };

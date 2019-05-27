@@ -1,21 +1,50 @@
+const MOCK_UUID = 'mock-uuid';
+jest.mock('uuid', () => jest.fn(() => MOCK_UUID));
+
 import typeDefs from './fixtures/typeDefs';
 import { makeExecutableSchema } from 'graphql-tools';
 import { graphql } from 'graphql';
 import { extractCypherQueriesFromOperation } from '../scanQueries';
-import { CypherQueryFieldMap } from '../types';
+import { CypherQueryFieldMap, DirectiveNames } from '../types';
 
-const expectCypher = async (query: string, cypherMap: CypherQueryFieldMap) => {
+const expectCypher = async (
+  query: string,
+  cypherMap: CypherQueryFieldMap,
+  directiveNames: DirectiveNames = {
+    cypher: 'cypher',
+    cypherSkip: 'cypherSkip',
+  }
+) => {
+  const finalTypeDefs = typeDefs
+    .replace(/@cypher/g, '@' + directiveNames.cypher)
+    .replace(/@cypherSkip/g, '@' + directiveNames.cypherSkip);
+
   const resolvers = {
     Query: {
       user: (parent, args, ctx, info) => {
-        const cypherQueries = extractCypherQueriesFromOperation(info);
+        const cypherQueries = extractCypherQueriesFromOperation(info, {
+          directiveNames,
+        });
         expect(cypherQueries).toEqual(cypherMap);
+      },
+    },
+    Mutation: {
+      createUser: (parent, args, ctx, info) => {
+        const cypherQueries = extractCypherQueriesFromOperation(info, {
+          directiveNames,
+        });
+        expect(cypherQueries).toEqual(cypherMap);
+        return {
+          id: MOCK_UUID,
+          name: 'foo',
+          email: 'bar@baz.com',
+        };
       },
     },
   };
 
   const schema = makeExecutableSchema({
-    typeDefs,
+    typeDefs: finalTypeDefs,
     resolvers,
   });
 
@@ -47,7 +76,11 @@ describe('scanning queries from an operation', () => {
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['name', 'email'],
         paramNames: ['args'],
-        params: { id: 'foo' },
+        params: {
+          args: {
+            id: 'foo',
+          },
+        },
         returnsList: false,
         fieldQueries: {},
       },
@@ -75,7 +108,11 @@ describe('scanning queries from an operation', () => {
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id', 'name', 'posts'],
         paramNames: ['args'],
-        params: { id: 'foo' },
+        params: {
+          args: {
+            id: 'foo',
+          },
+        },
         returnsList: false,
         fieldQueries: {
           posts: {
@@ -86,9 +123,11 @@ LIMIT $args.pagination.first`,
             paramNames: ['args'],
             returnsList: true,
             params: {
-              pagination: {
-                first: 10,
-                offset: 0,
+              args: {
+                pagination: {
+                  first: 10,
+                  offset: 0,
+                },
               },
             },
             fields: ['id', 'title'],
@@ -120,10 +159,44 @@ LIMIT $args.pagination.first`,
         fields: ['id'],
         paramNames: ['args'],
         returnsList: false,
-        params: { id: 'foo' },
+        params: { args: { id: 'foo' } },
         fieldQueries: {},
       },
     });
+  });
+
+  test('works with custom directive names', async () => {
+    expect.hasAssertions();
+
+    const query = `
+      query TestQuery {
+        user(id: "foo") {
+          id
+          settings {
+            id
+            homepage
+          }
+        }
+      }
+    `;
+
+    await expectCypher(
+      query,
+      {
+        user: {
+          cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
+          fields: ['id'],
+          paramNames: ['args'],
+          returnsList: false,
+          params: { args: { id: 'foo' } },
+          fieldQueries: {},
+        },
+      },
+      {
+        cypher: 'myCypher',
+        cypherSkip: 'myCypherSkip',
+      }
+    );
   });
 
   test('works with multiple branches of distinct cypher queries', async () => {
@@ -154,7 +227,9 @@ LIMIT $args.pagination.first`,
         paramNames: ['args'],
         returnsList: false,
         params: {
-          id: 'foo',
+          args: {
+            id: 'foo',
+          },
         },
         fieldQueries: {
           posts: {
@@ -165,9 +240,11 @@ LIMIT $args.pagination.first`,
             paramNames: ['args'],
             returnsList: true,
             params: {
-              pagination: {
-                first: 10,
-                offset: 0,
+              args: {
+                pagination: {
+                  first: 10,
+                  offset: 0,
+                },
               },
             },
             fields: ['id'],
@@ -209,7 +286,9 @@ LIMIT $args.pagination.first`,
         paramNames: ['args'],
         returnsList: false,
         params: {
-          id: 'foo',
+          args: {
+            id: 'foo',
+          },
         },
         fieldQueries: {
           posts: {
@@ -221,12 +300,14 @@ LIMIT $args.pagination.first`,
             fields: ['id', 'title'],
             returnsList: true,
             params: {
-              filter: {
-                titleMatch: 'bar',
-              },
-              pagination: {
-                first: 5,
-                offset: 10,
+              args: {
+                filter: {
+                  titleMatch: 'bar',
+                },
+                pagination: {
+                  first: 5,
+                  offset: 10,
+                },
               },
             },
             paramNames: ['args'],
@@ -259,7 +340,7 @@ LIMIT $args.pagination.first`,
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['name', 'email'],
         paramNames: ['args'],
-        params: { id: 'foo' },
+        params: { args: { id: 'foo' } },
         returnsList: false,
         fieldQueries: {},
       },
@@ -269,6 +350,39 @@ LIMIT $args.pagination.first`,
         paramNames: ['args'],
         returnsList: false,
         params: {},
+        fieldQueries: {},
+      },
+    });
+  });
+
+  test('adds generated parameters', async () => {
+    expect.hasAssertions();
+
+    const query = `
+      mutation TestMutation {
+        createUser(name: "foo", email: "bar@baz.com") {
+          id
+          name
+        }
+      }
+    `;
+
+    await expectCypher(query, {
+      createUser: {
+        cypher:
+          'CREATE (u:User {id: $generated.id, name: $args.name, email: $args.email}) RETURN u',
+        fields: ['id', 'name'],
+        paramNames: ['args', 'generated'],
+        params: {
+          args: {
+            name: 'foo',
+            email: 'bar@baz.com',
+          },
+          generated: {
+            id: MOCK_UUID,
+          },
+        },
+        returnsList: false,
         fieldQueries: {},
       },
     });

@@ -2,6 +2,8 @@ import {
   CypherQueryFieldMap,
   CypherConditionalStatement,
   CustomCypherQuery,
+  DirectiveNames,
+  CustomCypherParams,
 } from './types';
 import {
   GraphQLResolveInfo,
@@ -23,10 +25,15 @@ import {
 import { path } from 'ramda';
 import { getFieldDef } from 'graphql/execution/execute';
 
+export type ScanQueriesConfig = {
+  directiveNames: DirectiveNames;
+};
+
 const getMatchingConditionalCypher = (
   cypherDirectives: CypherConditionalStatement[],
   args: { [key: string]: any },
-  fieldName: string
+  fieldName: string,
+  directiveName: string = 'cypher'
 ): CypherConditionalStatement => {
   for (let directive of cypherDirectives) {
     if (!directive.when) {
@@ -51,7 +58,7 @@ const getMatchingConditionalCypher = (
   }
 
   throw new Error(
-    `No @cypher directive matched on field ${fieldName}. Always supply a directive without a condition!`
+    `No @${directiveName} directive matched on field ${fieldName}. Always supply a directive without a condition!`
   );
 };
 
@@ -64,6 +71,7 @@ type ExtractFromFieldParams = {
   path: string[];
   fragments: { [key: string]: FragmentDefinitionNode };
   activeQuery: CustomCypherQuery | undefined;
+  config: ScanQueriesConfig;
 };
 
 const extractQueriesFromField = ({
@@ -75,11 +83,15 @@ const extractQueriesFromField = ({
   path,
   fragments,
   activeQuery,
+  config,
 }: ExtractFromFieldParams): CypherQueryFieldMap => {
   const fieldName = field.name.value;
 
   // add field name to active query if not @cypherSkip
-  if (activeQuery && !isCypherSkip(parentType, fieldName)) {
+  if (
+    activeQuery &&
+    !isCypherSkip(parentType, fieldName, config.directiveNames.cypherSkip)
+  ) {
     activeQuery.fields.push(fieldName);
   }
 
@@ -94,7 +106,8 @@ const extractQueriesFromField = ({
 
   const cypherDirectives = getCypherStatementsFromDirective(
     parentType,
-    fieldName
+    fieldName,
+    config.directiveNames.cypher
   );
 
   let currentQuery: CustomCypherQuery | undefined = undefined;
@@ -114,7 +127,8 @@ const extractQueriesFromField = ({
     const { statement: cypher } = getMatchingConditionalCypher(
       cypherDirectives,
       argValues,
-      fieldName
+      fieldName,
+      config.directiveNames.cypher
     );
 
     const paramNames: string[] = [];
@@ -125,15 +139,20 @@ const extractQueriesFromField = ({
       paramNames.push('generated');
     }
 
+    const params: CustomCypherParams = {};
+    if (Object.keys(argValues).length) {
+      params.args = argValues;
+    }
+    if (generatedArgs) {
+      params.generated = generatedArgs;
+    }
+
     currentQuery = {
       cypher,
       returnsList: isListOrWrappedListType(schemaFieldDef.type),
       fields: [],
       paramNames: paramNames,
-      params: {
-        args: argValues,
-        generated: generatedArgs ? generatedArgs : undefined,
-      },
+      params,
       fieldQueries: {},
     };
 
@@ -163,6 +182,7 @@ const extractQueriesFromField = ({
     schema,
     path,
     fragments,
+    config,
   });
 };
 
@@ -175,6 +195,7 @@ type ExtractFromSelectionSetParams = {
   path: string[];
   fragments: { [key: string]: FragmentDefinitionNode };
   activeQuery: CustomCypherQuery | undefined;
+  config: ScanQueriesConfig;
 };
 
 const extractQueriesFromSelectionSet = ({
@@ -210,7 +231,15 @@ const extractQueriesFromSelectionSet = ({
   }, queries);
 
 export const extractCypherQueriesFromOperation = (
-  info: GraphQLResolveInfo
+  info: GraphQLResolveInfo,
+  config: {
+    directiveNames: DirectiveNames;
+  } = {
+    directiveNames: {
+      cypher: 'cypher',
+      cypherSkip: 'cypherSkip',
+    },
+  }
 ): CypherQueryFieldMap => {
   const schema = info.schema;
   const rootType = info.parentType;
@@ -230,6 +259,7 @@ export const extractCypherQueriesFromOperation = (
         path: [getNameOrAlias(field)],
         schema,
         activeQuery: undefined,
+        config,
       }),
     {}
   );

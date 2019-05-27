@@ -5,6 +5,7 @@ directive @cypher(
   statements: [CypherConditionalStatement!]
 ) on FIELD_DEFINITION
 directive @cypherSkip on FIELD_DEFINITION
+directive @generateId(argName: String) on FIELD_DEFINITION
 
 input Pagination {
   first: Int
@@ -81,5 +82,15 @@ type Query {
     )
 
   userSettings(id: ID!): UserSettings
+}
+
+type Mutation {
+  createUser(name: String!, email: String!): User!
+    @generateId
+    @cypher(
+      statement: """
+      CREATE (u:User {id: $generated.id, name: $args.name, email: $args.email}) RETURN u
+      """
+    )
 }
 `;

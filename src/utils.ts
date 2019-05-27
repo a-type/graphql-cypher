@@ -79,7 +79,8 @@ export const extractArgumentStringValue = (
 
 export const getCypherStatementsFromDirective = (
   schemaType: GraphQLObjectType,
-  fieldName: string
+  fieldName: string,
+  directiveName: string = 'cypher'
 ): CypherConditionalStatement[] => {
   const field = schemaType.getFields()[fieldName];
   if (!field || !field.astNode) {
@@ -88,7 +89,7 @@ export const getCypherStatementsFromDirective = (
 
   const cypherDirective = field.astNode.directives
     ? field.astNode.directives.find(
-        directive => directive.name.value === 'cypher'
+        directive => directive.name.value === directiveName
       )
     : null;
 
@@ -131,7 +132,8 @@ export const getCypherStatementsFromDirective = (
 
 export const isCypherSkip = (
   schemaType: GraphQLObjectType,
-  fieldName: string
+  fieldName: string,
+  directiveName: string = 'cypherSkip'
 ) => {
   const field = schemaType.getFields()[fieldName];
   if (!field || !field.astNode) {
@@ -141,7 +143,7 @@ export const isCypherSkip = (
   return (
     field.astNode.directives &&
     field.astNode.directives.some(
-      directive => directive.name.value === 'cypherSkip'
+      directive => directive.name.value === directiveName
     )
   );
 };
