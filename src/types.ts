@@ -9,16 +9,51 @@ export type CustomCypherParams = {
   };
 };
 
-export type CustomCypherQuery = {
-  cypher: string;
+export type BaseCypherQuery = {
   returnsList: boolean;
   paramNames: string[];
   params: CustomCypherParams;
   fields: string[];
   fieldQueries: {
-    [fieldName: string]: CustomCypherQuery;
+    [fieldName: string]: CypherQuery;
   };
 };
+
+export type CustomCypherQuery = BaseCypherQuery & {
+  cypher: string;
+};
+
+export type CypherBuilderQuery = BaseCypherQuery & {
+  match: string;
+  optionalMatch?: string;
+  when?: string;
+  set?: string;
+  delete?: string;
+  detachDelete?: string;
+  orderBy?: string;
+  skip?: string;
+  limit?: string;
+  return: string;
+};
+
+export type RelationDirection = 'OUT' | 'IN';
+
+export type CypherNodeQuery = BaseCypherQuery & {
+  relation: string;
+  direction: RelationDirection;
+  label?: string;
+};
+
+export type CypherRelationQuery = BaseCypherQuery & {
+  name: string;
+  direction: RelationDirection;
+  label?: string;
+};
+
+export type CypherQuery = CustomCypherQuery &
+  CypherBuilderQuery &
+  CypherNodeQuery &
+  CypherRelationQuery;
 
 export type CypherConditionalStatement = {
   statement: string;
@@ -30,13 +65,13 @@ export type CypherDirectiveArgs = {
   statements?: CypherConditionalStatement[];
 };
 
-export type CypherQueryFieldMap = { [path: string]: CustomCypherQuery };
+export type CypherQueryFieldMap = { [path: string]: CypherQuery };
 
 export type AugmentedContext = { [key: string]: any } & {
   __graphqlCypher: {
     isWrite: boolean;
     cypherQueries: CypherQueryFieldMap;
-    parentQuery: CustomCypherQuery | null;
+    parentQuery: CypherQuery | null;
     resultCache: {
       [fieldName: string]: any;
     };
