@@ -11,13 +11,13 @@ const expectCypher = async (
   query: string,
   cypherMap: CypherQueryFieldMap,
   directiveNames: DirectiveNames = {
-    cypher: 'cypher',
+    cypherCustom: 'cypherCustom',
     cypherSkip: 'cypherSkip',
     generateId: 'generateId',
   }
 ) => {
   const finalTypeDefs = typeDefs
-    .replace(/@cypher/g, '@' + directiveNames.cypher)
+    .replace(/@cypher/g, '@' + directiveNames.cypherCustom)
     .replace(/@cypherSkip/g, '@' + directiveNames.cypherSkip);
 
   const resolvers = {
@@ -194,7 +194,7 @@ LIMIT $args.pagination.first`,
         },
       },
       {
-        cypher: 'myCypher',
+        cypherCustom: 'myCypher',
         cypherSkip: 'myCypherSkip',
         generateId: 'myGenerateId',
       }

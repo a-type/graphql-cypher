@@ -17,7 +17,7 @@ export type MiddlewareConfig = {
 export const createMiddleware = (
   config: MiddlewareConfig = {
     directiveNames: {
-      cypher: 'cypher',
+      cypherCustom: 'cypherCustom',
       cypherSkip: 'cypherSkip',
       generateId: 'generateId',
     },

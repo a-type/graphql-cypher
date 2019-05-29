@@ -35,7 +35,7 @@ const getMatchingConditionalCypher = (
   cypherDirectives: CypherConditionalStatement[],
   args: { [key: string]: any },
   fieldName: string,
-  directiveName: string = 'cypher'
+  directiveName: string = 'cypherCustom'
 ): CypherConditionalStatement => {
   for (let directive of cypherDirectives) {
     if (!directive.when) {
@@ -109,7 +109,7 @@ const extractQueriesFromField = ({
   const cypherDirectives = getCypherStatementsFromDirective(
     parentType,
     fieldName,
-    config.directiveNames.cypher
+    config.directiveNames.cypherCustom
   );
 
   let currentQuery: CustomCypherQuery | undefined = undefined;
@@ -134,7 +134,7 @@ const extractQueriesFromField = ({
       cypherDirectives,
       argValues,
       fieldName,
-      config.directiveNames.cypher
+      config.directiveNames.cypherCustom
     );
 
     const paramNames: string[] = [];
@@ -237,7 +237,7 @@ export const extractCypherQueriesFromOperation = (
     directiveNames: DirectiveNames;
   } = {
     directiveNames: {
-      cypher: 'cypher',
+      cypherCustom: 'cypherCustom',
       cypherSkip: 'cypherSkip',
       generateId: 'generateId',
     },

@@ -47,7 +47,7 @@ export type AugmentedContext = { [key: string]: any } & {
 };
 
 export type DirectiveNames = {
-  cypher: string;
+  cypherCustom: string;
   cypherSkip: string;
   generateId: string;
 };
