@@ -14,14 +14,16 @@ import {
   SelectionSetNode,
 } from 'graphql';
 import {
-  getCypherStatementsFromDirective,
   extractObjectType,
-  isCypherSkip,
   getNameOrAlias,
   getArgumentsPlusDefaults,
   isListOrWrappedListType,
+} from './utils/graphql';
+import {
   getGeneratedArgsFromDirectives,
-} from './utils';
+  isCypherSkip,
+  getCypherStatementsFromDirective,
+} from './utils/directives';
 import { path } from 'ramda';
 import { getFieldDef } from 'graphql/execution/execute';
 

@@ -8,7 +8,6 @@ import {
   FieldNode,
   SelectionSetNode,
   GraphQLSchema,
-  ArgumentNode,
   ValueNode,
   NameNode,
   FragmentDefinitionNode,
@@ -24,8 +23,6 @@ import {
   isInputObjectType,
   isUnionType,
 } from 'graphql';
-import { CypherConditionalStatement } from './types';
-import uuid from 'uuid';
 
 export function isGraphqlScalarType(
   type: GraphQLNamedType
@@ -62,115 +59,6 @@ export function getFieldPath(info: GraphQLResolveInfo) {
 
   return path;
 }
-
-export const extractArgumentStringValue = (
-  argument?: ArgumentNode | null
-): string | null => {
-  if (!argument) {
-    return null;
-  }
-
-  const value = argument.value;
-  if (value.kind !== 'StringValue') {
-    return null;
-  }
-  return value.value;
-};
-
-export const getCypherStatementsFromDirective = (
-  schemaType: GraphQLObjectType,
-  fieldName: string,
-  directiveName: string = 'cypher'
-): CypherConditionalStatement[] => {
-  const field = schemaType.getFields()[fieldName];
-  if (!field || !field.astNode) {
-    return [];
-  }
-
-  const cypherDirective = field.astNode.directives
-    ? field.astNode.directives.find(
-        directive => directiveName === directive.name.value
-      )
-    : null;
-
-  if (!cypherDirective || !cypherDirective.arguments) {
-    return [];
-  }
-
-  const statementArg = cypherDirective.arguments.find(
-    arg => arg.name.value === 'statement'
-  );
-  if (statementArg) {
-    const statement = extractArgumentStringValue(statementArg);
-    if (!statement) {
-      throw new Error(`@cypher directive 'statement' arg must be a string.`);
-    }
-    return [
-      {
-        statement: statement.trim(),
-      },
-    ];
-  }
-
-  const statementsArg = cypherDirective.arguments.find(
-    arg => arg.name.value === 'statements'
-  );
-
-  if (!statementsArg) {
-    throw new Error(
-      `@cypher directive on '${
-        field.name
-      }' must specify either 'statement' or 'statements' argument`
-    );
-  }
-
-  return valueNodeToValue(statementsArg.value, {}).map(item => ({
-    ...item,
-    statement: item.statement.trim(),
-  }));
-};
-
-export const isCypherSkip = (
-  schemaType: GraphQLObjectType,
-  fieldName: string,
-  directiveName: string = 'cypherSkip'
-) => {
-  const field = schemaType.getFields()[fieldName];
-  if (!field || !field.astNode) {
-    return false;
-  }
-
-  return (
-    field.astNode.directives &&
-    field.astNode.directives.some(
-      directive => directive.name.value === directiveName
-    )
-  );
-};
-
-export const isExternal = (info: GraphQLResolveInfo) => {
-  const type = info.parentType.name;
-  const field = info.fieldName;
-
-  const schemaType = info.schema.getType(type);
-  if (!schemaType || !schemaType.astNode) {
-    throw new Error('Schema type was not found for ' + type);
-  }
-
-  if (isGraphqlScalarType(schemaType)) {
-    return true;
-  }
-
-  const fieldNode = (schemaType as GraphQLObjectType).getFields()[field];
-
-  return (
-    fieldNode.astNode &&
-    fieldNode.astNode.directives &&
-    !fieldNode.astNode.directives.some(
-      directive => directive.name.value === 'cypher'
-    )
-  );
-};
 
 export const valueNodeToValue = (
   valueNode: ValueNode,
@@ -223,37 +111,6 @@ export const getFragmentSelection = (
   }
 };
 
-/**
- * Converts a selection set into a list of field names.
- * @param existingFieldNames
- * @param selectionSet
- * @param fragments
- */
-export const selectionSetToFieldNames = (
-  existingFieldNames: string[],
-  selectionSet: SelectionSetNode,
-  fragments: { [key: string]: FragmentDefinitionNode }
-): string[] => {
-  // shallow iteration over each field in the selection set, adding its name
-  // to the list
-  return selectionSet.selections.reduce((names, selection) => {
-    // flatten fragments by recursion
-    if (
-      selection.kind === 'InlineFragment' ||
-      selection.kind === 'FragmentSpread'
-    ) {
-      return selectionSetToFieldNames(
-        names,
-        getFragmentSelection(selection, fragments),
-        fragments
-      );
-    } else {
-      // add field name to list
-      return [...names, selection.name.value];
-    }
-  }, existingFieldNames);
-};
-
 export const extractObjectType = (
   type: GraphQLOutputType
 ): GraphQLObjectType<any, any, any> | null => {
@@ -272,19 +129,6 @@ export const extractObjectType = (
 
 export const getNameOrAlias = (field: FieldNode) =>
   field.alias ? field.alias.value : field.name.value;
-
-export const isRootField = (
-  parentType: GraphQLObjectType,
-  schema: GraphQLSchema
-) => {
-  const queryType = schema.getQueryType();
-  const mutationType = schema.getMutationType();
-
-  return [
-    queryType && queryType.name,
-    mutationType && mutationType.name,
-  ].includes(parentType.name);
-};
 
 export const getArgumentsPlusDefaults = (
   parentTypeName: string,
@@ -317,23 +161,6 @@ export const getArgumentsPlusDefaults = (
   return {
     ...defaults,
     ...argFieldsToValues({}, field.arguments || [], variables),
-  };
-};
-
-/** creates an 'open' promise which can be resolved externally */
-export const createOpenPromise = () => {
-  let resolve: (data: any) => void = () => {};
-  let reject: (error: Error) => void = () => {};
-
-  const promise = new Promise((res, rej) => {
-    resolve = res;
-    reject = rej;
-  });
-
-  return {
-    promise,
-    resolve,
-    reject,
   };
 };
 
@@ -373,38 +200,4 @@ export const isDefaultResolver = (
   } else {
     return true;
   }
-};
-
-export const getGeneratedArgsFromDirectives = (
-  schemaType: GraphQLObjectType,
-  fieldName: string,
-  generateIdDirectiveName: string = 'generateId'
-): { [name: string]: any } | null => {
-  const field = schemaType.getFields()[fieldName];
-  if (!field || !field.astNode) {
-    return [];
-  }
-
-  const generateIdDirective = field.astNode.directives
-    ? field.astNode.directives.find(
-        directive => directive.name.value === generateIdDirectiveName
-      )
-    : null;
-
-  if (!generateIdDirective) {
-    return null;
-  }
-
-  const generatedIdArgNameArgument =
-    generateIdDirective.arguments &&
-    generateIdDirective.arguments.find(arg => arg.name.value === 'argName');
-
-  const generatedIdArgName =
-    (generatedIdArgNameArgument &&
-      extractArgumentStringValue(generatedIdArgNameArgument)) ||
-    'id';
-
-  return {
-    [generatedIdArgName]: uuid(),
-  };
 };

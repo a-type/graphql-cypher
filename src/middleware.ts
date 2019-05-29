@@ -1,9 +1,9 @@
 import { GraphQLResolveInfo, defaultFieldResolver } from 'graphql';
 import {
-  isRootField as getIsRootField,
+  isRoot as getIsRootField,
   getFieldPath,
   isListOrWrappedListType,
-} from './utils';
+} from './utils/graphql';
 import { extractCypherQueriesFromOperation } from './scanQueries';
 import { AugmentedContext, DirectiveNames } from './types';
 import { executeCypherQuery } from './executeQuery';
@@ -30,7 +30,7 @@ export const createMiddleware = (
   info: GraphQLResolveInfo
 ) => {
   const isWrite = info.operation.operation === 'mutation';
-  const isRootField = getIsRootField(info.parentType, info.schema);
+  const isRootField = getIsRootField(info);
 
   if (isRootField) {
     try {
