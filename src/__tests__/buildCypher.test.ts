@@ -51,6 +51,46 @@ describe('building a cypher query', () => {
     );
   });
 
+  test('works for a deeply nested field query', () => {
+    const fieldName = 'testUser';
+    const query: CustomCypherQuery = {
+      cypher: 'MATCH (user:User) RETURN user',
+      paramNames: [],
+      fields: ['id', 'posts'],
+      params: {},
+      returnsList: false,
+      fieldQueries: {
+        posts: {
+          cypher: 'MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post',
+          paramNames: [],
+          params: {},
+          returnsList: true,
+          fields: ['id', 'title', 'tags'],
+          fieldQueries: {
+            tags: {
+              cypher: 'MATCH (parent)-[:HAS_TAG]->(tag:Tag) RETURN tag',
+              paramNames: [],
+              params: {},
+              returnsList: true,
+              fields: ['id', 'name'],
+              fieldQueries: {},
+            },
+          },
+        },
+      },
+    };
+
+    expect(buildCypherQuery({ fieldName, query, isWrite: false })).toEqual(
+      `WITH apoc.cypher.runFirstColumnSingle("WITH $parent AS parent MATCH (user:User) RETURN user", {parent: $parent}) ` +
+        `AS \`testUser\` ` +
+        `RETURN \`testUser\` {.id, posts: ` +
+        `[testUser_posts IN ` +
+        `apoc.cypher.runFirstColumnMany("WITH {parent} AS parent MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post", {parent: testUser}) ` +
+        `| testUser_posts {.id, .title, tags: [testUser_posts_tags IN apoc.cypher.runFirstColumnMany("WITH {parent} AS parent MATCH (parent)-[:HAS_TAG]->(tag:Tag) RETURN tag", {parent: testUser_posts}) | testUser_posts_tags {.id, .name}]}]` +
+        `} AS \`testUser\``
+    );
+  });
+
   test('works with params', () => {
     const fieldName = 'testUser';
     const query: CustomCypherQuery = {
