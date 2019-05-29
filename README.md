@@ -125,14 +125,14 @@ With the middleware installed, you'll now need to add this library's custom dire
 **Using makeExecutableSchema**
 
 ```ts
-import { CypherDirective } from 'graphql-cypher';
+import { CustomCypherDirective } from 'graphql-cypher';
 import { makeExecutableSchema } from 'graphql-tools';
 
 const schema = makeExecutableSchema({
   typeDefs,
   resolvers,
   schemaDirectives: {
-    cypherCustom: CypherDirective,
+    cypherCustom: CustomCypherDirective,
   },
 });
 ```

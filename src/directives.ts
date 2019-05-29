@@ -11,7 +11,7 @@ import { AugmentedContext } from './types';
  * for fields that use it. The real magic of @cypher happens when the middleware reads the arguments
  * to the directives directly from the schema before execution.
  */
-export class CypherDirective extends SchemaDirectiveVisitor {
+export class CustomCypherDirective extends SchemaDirectiveVisitor {
   visitFieldDefinition(field: GraphQLField<any, any>) {
     const { resolve } = field;
     if (!resolve) {
