@@ -20,40 +20,49 @@ export type BaseCypherQuery = {
 };
 
 export type CustomCypherQuery = BaseCypherQuery & {
+  kind: 'CustomCypherQuery';
   cypher: string;
 };
 
-export type CypherBuilderQuery = BaseCypherQuery & {
+export type BuilderCypherQuery = BaseCypherQuery & {
+  kind: 'BuilderCypherQuery';
   match: string;
   optionalMatch?: string;
   when?: string;
-  set?: string;
-  delete?: string;
-  detachDelete?: string;
+  create: string[];
+  merge: string[];
+  set: string[];
+  delete: string[];
+  detachDelete: string[];
+  remove: string[];
   orderBy?: string;
   skip?: string;
   limit?: string;
   return: string;
 };
 
-export type RelationDirection = 'OUT' | 'IN';
+export type RelationshipDirection = 'OUT' | 'IN';
 
-export type CypherNodeQuery = BaseCypherQuery & {
-  relation: string;
-  direction: RelationDirection;
-  label?: string;
+export type NodeCypherQuery = BaseCypherQuery & {
+  kind: 'NodeCypherQuery';
+  relationship: string;
+  direction: RelationshipDirection;
+  label: string;
 };
 
-export type CypherRelationQuery = BaseCypherQuery & {
-  name: string;
-  direction: RelationDirection;
-  label?: string;
+export type RelationshipCypherQuery = BaseCypherQuery & {
+  kind: 'RelationshipCypherQuery';
+  relationshipType: string;
+  direction: RelationshipDirection;
+  nodeField: string;
+  nodeLabel: string;
 };
 
-export type CypherQuery = CustomCypherQuery &
-  CypherBuilderQuery &
-  CypherNodeQuery &
-  CypherRelationQuery;
+export type CypherQuery =
+  | CustomCypherQuery
+  | BuilderCypherQuery
+  | NodeCypherQuery
+  | RelationshipCypherQuery;
 
 export type CypherConditionalStatement = {
   statement: string;

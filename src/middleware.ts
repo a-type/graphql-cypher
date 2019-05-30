@@ -7,8 +7,9 @@ import {
 import { extractCypherQueriesFromOperation } from './scanQueries';
 import { AugmentedContext, DirectiveNames } from './types';
 import { executeCypherQuery } from './executeQuery';
-import { buildCypherQuery, buildPrefixedVariables } from './buildCypher';
+import { buildCypher } from './builder/builder';
 import { log } from './logger';
+import { buildPrefixedVariables } from './builder/variables';
 
 export type MiddlewareConfig = {
   directiveNames: DirectiveNames;
@@ -71,7 +72,7 @@ export const createMiddleware = (
   if (matchingCypherQuery) {
     runCypher = async () => {
       try {
-        const cypher = buildCypherQuery({
+        const cypher = buildCypher({
           fieldName: info.fieldName,
           query: matchingCypherQuery,
           // we only do a write transaction if this is the mutation root field; while

@@ -1,6 +1,6 @@
 export default `
 input CypherConditionalStatement { statement: String!, when: String }
-directive @cypher(
+directive @cypherCustom(
   statement: String
   statements: [CypherConditionalStatement!]
 ) on FIELD_DEFINITION
@@ -26,7 +26,7 @@ type UserSettings {
   id: ID!
   homepage: String!
   user: User!
-    @cypher(
+    @cypherCustom(
       statement: """
       MATCH (user:User {id: $parent.userId}) RETURN user
       """
@@ -42,7 +42,7 @@ type User {
     pagination: Pagination = { first: 10, offset: 0 }
     filter: PostFilter
   ): [Post!]!
-    @cypher(statements: [
+    @cypherCustom(statements: [
       {
         when: "$args.filter"
         statement: """
@@ -68,14 +68,14 @@ type User {
 
 type Query {
   user(id: ID!): User
-    @cypher(
+    @cypherCustom(
       statement: """
       MATCH (user:User {id: $args.id}) RETURN user
       """
     )
 
   post(id: ID!): Post
-    @cypher(
+    @cypherCustom(
       statement: """
       MATCH (post:Post {id: $args.id}) RETURN post
       """
@@ -87,7 +87,7 @@ type Query {
 type Mutation {
   createUser(name: String!, email: String!): User!
     @generateId
-    @cypher(
+    @cypherCustom(
       statement: """
       CREATE (u:User {id: $generated.id, name: $args.name, email: $args.email}) RETURN u
       """

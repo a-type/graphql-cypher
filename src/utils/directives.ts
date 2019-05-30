@@ -2,6 +2,7 @@ import { GraphQLObjectType, ArgumentNode } from 'graphql';
 import { CypherConditionalStatement } from '../types';
 import uuid from 'uuid';
 import { valueNodeToValue } from './graphql';
+import { path } from 'ramda';
 
 export const extractArgumentStringValue = (
   argument?: ArgumentNode | null
@@ -120,4 +121,37 @@ export const getGeneratedArgsFromDirectives = (
   return {
     [generatedIdArgName]: uuid(),
   };
+};
+
+export const getMatchingConditionalCypher = (
+  cypherDirectives: CypherConditionalStatement[],
+  args: { [key: string]: any },
+  fieldName: string,
+  directiveName: string = 'cypherCustom'
+): CypherConditionalStatement => {
+  for (let directive of cypherDirectives) {
+    if (!directive.when) {
+      return directive;
+    }
+
+    const pathSegments = directive.when
+      .replace('$', '')
+      .split('.')
+      .map(segment => {
+        if (segment.startsWith('[') && segment.endsWith(']')) {
+          return parseInt(segment.replace('[', '').replace(']', ''), 10);
+        }
+        return segment;
+      });
+
+    const pathValue = path(pathSegments, { args });
+
+    if (!!pathValue) {
+      return directive;
+    }
+  }
+
+  throw new Error(
+    `No @${directiveName} directive matched on field ${fieldName}. Always supply a directive without a condition!`
+  );
 };

@@ -17,7 +17,7 @@ const expectCypher = async (
   }
 ) => {
   const finalTypeDefs = typeDefs
-    .replace(/@cypher/g, '@' + directiveNames.cypherCustom)
+    .replace(/@cypherCustom/g, '@' + directiveNames.cypherCustom)
     .replace(/@cypherSkip/g, '@' + directiveNames.cypherSkip);
 
   const resolvers = {
@@ -74,6 +74,7 @@ describe('scanning queries from an operation', () => {
 
     await expectCypher(query, {
       user: {
+        kind: 'CustomCypherQuery',
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['name', 'email'],
         paramNames: ['args'],
@@ -106,6 +107,7 @@ describe('scanning queries from an operation', () => {
 
     await expectCypher(query, {
       user: {
+        kind: 'CustomCypherQuery',
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id', 'name', 'posts'],
         paramNames: ['args'],
@@ -117,6 +119,7 @@ describe('scanning queries from an operation', () => {
         returnsList: false,
         fieldQueries: {
           posts: {
+            kind: 'CustomCypherQuery',
             cypher: `MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
 RETURN post
 SKIP $args.pagination.offset
@@ -156,6 +159,7 @@ LIMIT $args.pagination.first`,
 
     await expectCypher(query, {
       user: {
+        kind: 'CustomCypherQuery',
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id'],
         paramNames: ['args'],
@@ -185,6 +189,7 @@ LIMIT $args.pagination.first`,
       query,
       {
         user: {
+          kind: 'CustomCypherQuery',
           cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
           fields: ['id'],
           paramNames: ['args'],
@@ -224,6 +229,7 @@ LIMIT $args.pagination.first`,
 
     await expectCypher(query, {
       user: {
+        kind: 'CustomCypherQuery',
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id', 'posts'],
         paramNames: ['args'],
@@ -235,6 +241,7 @@ LIMIT $args.pagination.first`,
         },
         fieldQueries: {
           posts: {
+            kind: 'CustomCypherQuery',
             cypher: `MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
 RETURN post
 SKIP $args.pagination.offset
@@ -255,6 +262,7 @@ LIMIT $args.pagination.first`,
         },
       },
       'user,settings,user': {
+        kind: 'CustomCypherQuery',
         cypher: 'MATCH (user:User {id: $parent.userId}) RETURN user',
         fields: ['id', 'name'],
         returnsList: false,
@@ -283,6 +291,7 @@ LIMIT $args.pagination.first`,
 
     await expectCypher(query, {
       user: {
+        kind: 'CustomCypherQuery',
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['id', 'name', 'posts'],
         paramNames: ['args'],
@@ -294,6 +303,7 @@ LIMIT $args.pagination.first`,
         },
         fieldQueries: {
           posts: {
+            kind: 'CustomCypherQuery',
             cypher: `MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
 WHERE post.title =~ $args.filter.titleMatch
 RETURN post
@@ -339,6 +349,7 @@ LIMIT $args.pagination.first`,
 
     await expectCypher(query, {
       alias: {
+        kind: 'CustomCypherQuery',
         cypher: 'MATCH (user:User {id: $args.id}) RETURN user',
         fields: ['name', 'email'],
         paramNames: ['args'],
@@ -347,6 +358,7 @@ LIMIT $args.pagination.first`,
         fieldQueries: {},
       },
       'alias,settings,alias2': {
+        kind: 'CustomCypherQuery',
         cypher: 'MATCH (user:User {id: $parent.userId}) RETURN user',
         fields: ['id'],
         paramNames: [],
@@ -371,6 +383,7 @@ LIMIT $args.pagination.first`,
 
     await expectCypher(query, {
       createUser: {
+        kind: 'CustomCypherQuery',
         cypher:
           'CREATE (u:User {id: $generated.id, name: $args.name, email: $args.email}) RETURN u',
         fields: ['id', 'name'],

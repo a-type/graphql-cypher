@@ -24,6 +24,13 @@ type Post {
 
   # example: reverse edge
   author: User! @cypherNode(relation: "HAS_POST", direction: "IN")
+
+  tags: [Tag!]! @cypherNode(relation: "HAS_TAG", direction: "OUT")
+}
+
+type Tag {
+  id: ID!
+  name: String!
 }
 
 type UserFriendshipEdge @cypherRelation(nodeField: "node") {
@@ -87,9 +94,8 @@ query UserAndPosts($id: ID!) {
 Generates a query like this:
 
 ```cypher
-MATCH (user:User {id: $args.id})-[:HAS_POST]->(user_posts:Post)
-WITH user, user_posts {.id, .title} as user_posts
-RETURN user {.id, .name, posts: user_posts}
+MATCH (user:User {id: $args.id})
+RETURN user {.id, .name, posts: [(user)-[:HAS_POST]->(user_posts:Post) | user_posts {.id, .title}]}
 ```
 
 ---
@@ -116,12 +122,8 @@ MATCH (posts:Post)
 WHERE posts.title =~ $args.titleSearch
 WITH posts
 SKIP 0 LIMIT 20
-MATCH (posts)<-[:HAS_POST]-(posts_author:User)
-WITH posts, posts_author {.id, .name} as posts_author
-RETURN posts {.id, .title, author: head(posts_author)}
+RETURN posts {.id, .title, author: head([(posts)<-[:HAS_POST]-(posts_author:User) | posts_author {.id, .name}])}
 ```
-
-Notes: Because `skip/limit` is an aggregating operation, we must add a `WITH` clause and funnel the query through it before continuing the path.
 
 ---
 
@@ -146,8 +148,31 @@ query UserWithFriends {
 Generates a query like this:
 
 ```cypher
-MATCH (user:User {id: $args.id})-[user_friendships:FRIENDS_WITH]->(user_friendships_friend:User)
-WITH user, user_friendships, user_friendships_friend {.id, .name} as user_friendships_friend
-WITH user, user_friendships {.type, friend: head(nodes(user_friendships_friend))} as user_friendships
-RETURN user {.id, .name, friendships: user_friendships}
+MATCH (user:User {id: $args.id})
+RETURN user {.id, .name, friendships: [(user)-[user_friendships:FRIENDS_WITH]->(:User) | user_friendships {.type, friend: head(:User)-[user_friendships]->(user_friendships_friend:User) | user_friendships_friend {.id, .name}}]}
+```
+
+---
+
+A GraphQL query like this:
+
+```graphql
+query UserPostsTags {
+  user(id: "foo") {
+    id
+    posts {
+      id
+      tags {
+        id
+      }
+    }
+  }
+}
+```
+
+Generates a query like this:
+
+```cypher
+MATCH (user:User {id: $args.id})
+RETURN user {.id, posts: [(user)-[:HAS_POST]->(user_posts:Post) | user_posts {.id, tags: [(user_posts)-[:HAS_TAG]->(user_posts_tags:Tag) | user_posts_tags {.id}]}]}
 ```
