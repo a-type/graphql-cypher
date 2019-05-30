@@ -131,3 +131,21 @@ export const buildMultiValueYieldMapper = ({
 
   return 'YIELD value ' + `WITH ${yieldedNames}`;
 };
+
+/**
+ * Returns a function that will process a phrase and replace the specified argument
+ * names with 'namespaced' versions for use in a real query
+ */
+export const createParamNamespacer = (
+  namespace: string,
+  paramNames: string[] = ['args', 'generated']
+) => (phrase?: string) =>
+  phrase &&
+  paramNames.reduce(
+    (output, argName) =>
+      output.replace(
+        new RegExp(`\\$${argName}`, 'g'),
+        `$${namespace}.${argName}`
+      ),
+    phrase
+  );

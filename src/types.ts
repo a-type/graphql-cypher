@@ -54,7 +54,6 @@ export type RelationshipCypherQuery = BaseCypherQuery & {
   kind: 'RelationshipCypherQuery';
   relationshipType: string;
   direction: RelationshipDirection;
-  nodeField: string;
   nodeLabel: string;
 };
 

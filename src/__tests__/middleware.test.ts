@@ -85,11 +85,11 @@ describe('the middleware', () => {
     expect(neo4jDriver._mockTransaction.run).toHaveBeenCalled();
     expect(neo4jDriver._mockTransaction.run.mock.calls[0][0])
       .toMatchInlineSnapshot(`
-      "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent AS parent MATCH (user:User {id: $args.id}) RETURN user\\", {args: $user_args, parent: $parent}) AS \`user\`
-      RETURN \`user\` {.name, .email, posts: [user_posts IN apoc.cypher.runFirstColumnMany(\\"WITH {parent} AS parent MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
+      "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User {id: $args.id}) RETURN user\\", {args: $user.args, parent: $parent}) AS \`user\`
+      RETURN \`user\` {.name, .email, posts: [user_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
       RETURN post
       SKIP $args.pagination.offset
-      LIMIT $args.pagination.first\\", {args: $user_posts_args, parent: user}) | user_posts {.id, .title}]} AS \`user\`"
+      LIMIT $args.pagination.first\\", {args: $user_posts.args, parent: user}) | user_posts {.id, .title}]} AS \`user\`"
     `);
     expect(neo4jDriver._mockTransaction.run.mock.calls[0][1])
       .toMatchInlineSnapshot(`
@@ -98,17 +98,21 @@ describe('the middleware', () => {
                 "foo": "bar",
               },
               "parent": null,
-              "user_args": Object {
-                "id": "foo",
-              },
-              "user_generated": undefined,
-              "user_posts_args": Object {
-                "pagination": Object {
-                  "first": 10,
-                  "offset": 0,
+              "user": Object {
+                "args": Object {
+                  "id": "foo",
                 },
+                "generated": undefined,
               },
-              "user_posts_generated": undefined,
+              "user_posts": Object {
+                "args": Object {
+                  "pagination": Object {
+                    "first": 10,
+                    "offset": 0,
+                  },
+                },
+                "generated": undefined,
+              },
             }
         `);
   });

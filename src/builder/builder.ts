@@ -23,21 +23,19 @@ import {
   buildMultiValueYieldMapper,
   safeVar,
   escapeQuotes,
+  createParamNamespacer,
 } from './language';
 
 const buildRelationshipField = ({
   fieldName,
   query,
-  prefix,
   parentName,
 }: {
   fieldName: string;
   query: RelationshipCypherQuery;
-  prefix: string;
   parentName: string;
 }) => {
   const namespacedName = `${parentName}_${fieldName}`;
-  const fieldPrefix = prefix + fieldName + '_';
 
   return [
     `${fieldName}: `,
@@ -51,8 +49,8 @@ const buildRelationshipField = ({
     }),
     buildNode({ label: query.nodeLabel }),
     '|',
+    ` ${namespacedName} `,
     buildFields({
-      prefix: fieldPrefix,
       parentName: namespacedName,
       query,
       parentWasRelationship: true,
@@ -64,18 +62,15 @@ const buildRelationshipField = ({
 const buildNodeField = ({
   fieldName,
   query,
-  prefix,
   parentName,
   parentWasRelationship,
 }: {
   fieldName: string;
   query: NodeCypherQuery;
-  prefix: string;
   parentName: string;
   parentWasRelationship: boolean;
 }) => {
   const namespacedName = `${parentName}_${fieldName}`;
-  const fieldPrefix = prefix + fieldName + '_';
 
   return [
     `${fieldName}: `,
@@ -88,9 +83,9 @@ const buildNodeField = ({
       direction: query.direction,
     }),
     buildNode({ binding: namespacedName, label: query.label }),
-    '|',
+    ' | ',
+    `${namespacedName} `,
     buildFields({
-      prefix: fieldPrefix,
       parentName: namespacedName,
       query,
       parentWasRelationship: false,
@@ -107,16 +102,16 @@ const buildNodeField = ({
  */
 const buildCustomSubqueryParams = ({
   params,
-  prefix,
+  fieldName,
   parentName,
 }: {
   params: string[];
-  prefix: string;
+  fieldName: string;
   parentName?: string;
 }): string => {
   const paramTuples: [string, string][] = params.map(key => [
     key,
-    `$${prefix}${key}`,
+    `$${fieldName}.${key}`,
   ]);
   if (parentName) {
     paramTuples.push(['parent', parentName]);
@@ -125,32 +120,26 @@ const buildCustomSubqueryParams = ({
   return paramTuples.map(([name, value]) => `${name}: ${value}`).join(', ');
 };
 
-const buildParentRename = (parentName?: string) =>
-  parentName && parentName.startsWith('$')
-    ? `WITH $parent AS parent`
-    : `WITH {parent} AS parent`;
-
 const buildCustomSubqueryClause = ({
   query,
-  prefix,
+  fieldName,
   parentName,
 }: {
   query: CustomCypherQuery;
-  prefix: string;
+  fieldName: string;
   parentName?: string;
 }): string => {
-  const parentRename = buildParentRename(parentName);
   const apocFn =
     'apoc.cypher.runFirstColumn' + (query.returnsList ? 'Many' : 'Single');
 
   return [
     `${apocFn}(`,
-    `"${parentRename} `,
+    `"WITH $parent as parent `,
     escapeQuotes(query.cypher),
     `", {`,
     buildCustomSubqueryParams({
       params: query.paramNames,
-      prefix,
+      fieldName,
       parentName,
     }),
     `})`,
@@ -159,17 +148,14 @@ const buildCustomSubqueryClause = ({
 
 const buildCustomField = ({
   fieldName,
-  prefix,
   parentName,
   query,
 }: {
   fieldName: string;
-  prefix: string;
   parentName: string;
   query: CustomCypherQuery;
 }) => {
   const namespacedName = `${parentName}_${fieldName}`;
-  const fieldPrefix = prefix + fieldName + '_';
 
   return [
     `${fieldName}: `,
@@ -177,13 +163,12 @@ const buildCustomField = ({
     `[${namespacedName} IN `,
     buildCustomSubqueryClause({
       query,
-      prefix: fieldPrefix,
+      fieldName: namespacedName,
       parentName,
     }),
     ` | ${namespacedName} `,
     buildFields({
       query,
-      prefix: fieldPrefix,
       parentName: namespacedName,
       parentWasRelationship: false,
     }),
@@ -194,12 +179,10 @@ const buildCustomField = ({
 
 const buildFields = ({
   query,
-  prefix,
   parentName,
   parentWasRelationship,
 }: {
   query: CypherQuery;
-  prefix: string;
   parentName: string;
   parentWasRelationship: boolean;
 }) => {
@@ -222,7 +205,6 @@ const buildFields = ({
         } else if (fieldQuery.kind === 'NodeCypherQuery') {
           return buildNodeField({
             fieldName,
-            prefix,
             parentName,
             query: fieldQuery,
             parentWasRelationship,
@@ -230,14 +212,12 @@ const buildFields = ({
         } else if (fieldQuery.kind === 'RelationshipCypherQuery') {
           return buildRelationshipField({
             fieldName,
-            prefix,
             parentName,
             query: fieldQuery,
           });
         } else if (fieldQuery.kind === 'CustomCypherQuery') {
           return buildCustomField({
             fieldName,
-            prefix,
             parentName,
             query: fieldQuery,
           });
@@ -255,9 +235,13 @@ const buildBuilderQuery = ({
   fieldName: string;
   query: BuilderCypherQuery;
 }) => {
-  const prefix = fieldName + '_';
+  // will be used to replace parameter refererences with namespaced versions,
+  // like $args -> $user_posts.args
+  const namespaceParams = createParamNamespacer(fieldName, query.paramNames);
 
   const phrases = [
+    // just renames an incoming $parent param to basic "parent"
+    buildWith('$parent AS parent'),
     buildMatch(query.match),
     buildOptionalMatch(query.optionalMatch),
     ...query.create.map(buildCreate),
@@ -279,12 +263,12 @@ const buildBuilderQuery = ({
     phrases.push(filters);
   }
 
-  const body = buildPhrases(phrases);
+  // namespace params, then build into string query body
+  const body = buildPhrases(phrases.map(namespaceParams));
 
   // RETURN must incorporate nested field patterns
   const fields = buildFields({
     query,
-    prefix,
     parentName: fieldName,
     parentWasRelationship: false,
   });
@@ -298,17 +282,16 @@ const buildCustomWriteQuery = ({
   query: CustomCypherQuery;
   fieldName: string;
 }) => {
-  const prefix = fieldName + '_';
   const parentVariableName = '$parent';
 
   return [
     `CALL apoc.cypher.doIt("`,
-    buildParentRename(parentVariableName),
+    `WITH $parent as parent`,
     ` ${escapeQuotes(query.cypher)}", {`,
     buildCustomSubqueryParams({
       params: query.paramNames,
-      prefix,
       parentName: parentVariableName,
+      fieldName,
     }),
     `})`,
     `\n`,
@@ -318,7 +301,6 @@ const buildCustomWriteQuery = ({
     `\n`,
     buildReturn(`\`${fieldName}\` `),
     buildFields({
-      prefix,
       parentName: fieldName,
       query,
       parentWasRelationship: false,
@@ -334,22 +316,20 @@ const buildCustomReadQuery = ({
   query: CustomCypherQuery;
   fieldName: string;
 }) => {
-  const prefix = fieldName + '_';
   const parentVariableName = '$parent';
 
   return [
     `WITH `,
     buildCustomSubqueryClause({
       query,
-      prefix,
       parentName: parentVariableName,
+      fieldName,
     }),
     query.returnsList ? ` AS x UNWIND x` : '',
     ` AS \`${fieldName}\``,
     `\n`,
     buildReturn(`\`${fieldName}\` `),
     buildFields({
-      prefix,
       parentName: fieldName,
       query,
       parentWasRelationship: false,

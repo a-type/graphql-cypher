@@ -6,22 +6,24 @@ import { safeVar } from './language';
  * and all its sub-queries
  */
 const buildPrefixedFieldArgVariables = ({
-  prefix,
+  fieldName,
   query,
 }: {
-  prefix: string;
+  fieldName: string;
   query: CypherQuery;
 }) => ({
-  [`${prefix}args`]: query.params.args,
-  [`${prefix}generated`]: query.params.generated,
+  [fieldName]: {
+    args: query.params.args,
+    generated: query.params.generated,
+  },
   ...query.fields
-    .filter(fieldName => !!query.fieldQueries[fieldName])
+    .filter(childFieldName => !!query.fieldQueries[childFieldName])
     .reduce(
-      (args, fieldName) => ({
+      (args, childFieldName) => ({
         ...args,
         ...buildPrefixedFieldArgVariables({
-          prefix: prefix + fieldName + '_',
-          query: query.fieldQueries[fieldName],
+          fieldName: fieldName + '_' + childFieldName,
+          query: query.fieldQueries[childFieldName],
         }),
       }),
       {}
@@ -40,7 +42,6 @@ export const buildPrefixedVariables = ({
   contextValues?: any;
 }) => {
   const safeName = safeVar(fieldName);
-  const prefix = safeName + '_';
 
   return {
     // passing the parent as a variable lets us cross the graphql -> graphdb boundary
@@ -49,6 +50,6 @@ export const buildPrefixedVariables = ({
     // the user may supply values in their context which they always want passed to queries
     context: contextValues,
 
-    ...buildPrefixedFieldArgVariables({ prefix, query }),
+    ...buildPrefixedFieldArgVariables({ fieldName: safeName, query }),
   };
 };
