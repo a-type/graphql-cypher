@@ -10,6 +10,7 @@ import { executeCypherQuery } from './executeQuery';
 import { buildCypher } from './builder/builder';
 import { log } from './logger';
 import { buildPrefixedVariables } from './builder/variables';
+import { DEFAULT_DIRECTIVE_NAMES } from './constants';
 
 export type MiddlewareConfig = {
   directiveNames: DirectiveNames;
@@ -17,11 +18,7 @@ export type MiddlewareConfig = {
 
 export const createMiddleware = (
   config: MiddlewareConfig = {
-    directiveNames: {
-      cypherCustom: 'cypherCustom',
-      cypherSkip: 'cypherSkip',
-      generateId: 'generateId',
-    },
+    directiveNames: DEFAULT_DIRECTIVE_NAMES,
   }
 ) => async (
   resolve: Function,

@@ -26,9 +26,8 @@ export type CustomCypherQuery = BaseCypherQuery & {
 
 export type BuilderCypherQuery = BaseCypherQuery & {
   kind: 'BuilderCypherQuery';
-  match: string;
+  match?: string;
   optionalMatch?: string;
-  when?: string;
   create: string[];
   merge: string[];
   set: string[];
@@ -90,7 +89,51 @@ export type AugmentedContext = { [key: string]: any } & {
 };
 
 export type DirectiveNames = {
+  cypher: string;
+  cypherNode: string;
+  cypherRelationship: string;
   cypherCustom: string;
   cypherSkip: string;
   generateId: string;
 };
+
+export type CypherBuilderDirective = {
+  kind: 'CypherBuilderDirective';
+  match?: string;
+  optionalMatch?: string;
+  create: string[];
+  merge: string[];
+  set: string[];
+  delete: string[];
+  detachDelete: string[];
+  remove: string[];
+  orderBy?: string;
+  skip?: string;
+  limit?: string;
+  return: string;
+};
+
+export type CypherNodeDirective = {
+  kind: 'CypherNodeDirective';
+  relationship: string;
+  direction: RelationshipDirection;
+  label?: string;
+};
+
+export type CypherRelationshipDirective = {
+  kind: 'CypherRelationshipDirective';
+  relationshipType: string;
+  direction: RelationshipDirection;
+  nodeLabel?: string;
+};
+
+export type CypherCustomDirective = {
+  kind: 'CypherCustomDirective';
+  cypher: string;
+};
+
+export type CypherDirective =
+  | CypherBuilderDirective
+  | CypherNodeDirective
+  | CypherRelationshipDirective
+  | CypherCustomDirective;

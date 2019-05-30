@@ -8,7 +8,7 @@ export const safeVar = (v: any) => {
   return stringified.replace(/[-!$%^&*()_+|~=`{}\[\]:";'<>?,.\/]/g, '_');
 };
 
-export const buildMatch = (phrase: string): string => `MATCH ${phrase}`;
+export const buildMatch = (phrase?: string) => phrase && `MATCH ${phrase}`;
 
 export const buildOptionalMatch = (phrase?: string) =>
   phrase && `OPTIONAL MATCH ${phrase}`;

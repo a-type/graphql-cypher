@@ -6,19 +6,20 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { graphql } from 'graphql';
 import { extractCypherQueriesFromOperation } from '../scanQueries';
 import { CypherQueryFieldMap, DirectiveNames } from '../types';
+import { DEFAULT_DIRECTIVE_NAMES } from '../constants';
+import { directives } from '../directives';
 
 const expectCypher = async (
   query: string,
   cypherMap: CypherQueryFieldMap,
-  directiveNames: DirectiveNames = {
-    cypherCustom: 'cypherCustom',
-    cypherSkip: 'cypherSkip',
-    generateId: 'generateId',
-  }
+  directiveNames: DirectiveNames = DEFAULT_DIRECTIVE_NAMES
 ) => {
   const finalTypeDefs = typeDefs
     .replace(/@cypherCustom/g, '@' + directiveNames.cypherCustom)
-    .replace(/@cypherSkip/g, '@' + directiveNames.cypherSkip);
+    .replace(/@cypherSkip/g, '@' + directiveNames.cypherSkip)
+    .replace(/@cypher/g, '@' + directiveNames.cypher)
+    .replace(/@cypherNode/g, '@' + directiveNames.cypherNode)
+    .replace(/@cypherRelationship/g, '@' + directiveNames.cypherRelationship);
 
   const resolvers = {
     Query: {
@@ -47,6 +48,7 @@ const expectCypher = async (
   const schema = makeExecutableSchema({
     typeDefs: finalTypeDefs,
     resolvers,
+    schemaDirectives: directives,
   });
 
   const result = await graphql({
@@ -199,9 +201,12 @@ LIMIT $args.pagination.first`,
         },
       },
       {
-        cypherCustom: 'myCypher',
+        cypherCustom: 'myCypherCustom',
         cypherSkip: 'myCypherSkip',
         generateId: 'myGenerateId',
+        cypher: 'myCypher',
+        cypherNode: 'myCypherNode',
+        cypherRelationship: 'myCypherRelationship',
       }
     );
   });

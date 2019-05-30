@@ -5,7 +5,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { applyMiddleware } from 'graphql-middleware';
 import neo4jDriver from './mocks/neo4jDriver';
 import neo4jRecordSet from './mocks/neo4jRecordSet';
-import { CustomCypherDirective } from '../directives';
+import { directives } from '../directives';
 
 describe('the middleware', () => {
   test('works', async () => {
@@ -13,9 +13,7 @@ describe('the middleware', () => {
       makeExecutableSchema({
         typeDefs,
         resolvers: {},
-        schemaDirectives: {
-          cypherCustom: CustomCypherDirective,
-        },
+        schemaDirectives: directives,
       }),
       middleware
     );
@@ -172,9 +170,7 @@ describe('the middleware', () => {
             },
           },
         },
-        schemaDirectives: {
-          cypher: CustomCypherDirective,
-        },
+        schemaDirectives: directives,
       }),
       middleware
     );

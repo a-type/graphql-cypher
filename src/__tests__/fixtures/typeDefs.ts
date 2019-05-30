@@ -1,11 +1,7 @@
+import { directiveTypeDefs } from '../../directives';
+
 export default `
-input CypherConditionalStatement { statement: String!, when: String }
-directive @cypherCustom(
-  statement: String
-  statements: [CypherConditionalStatement!]
-) on FIELD_DEFINITION
-directive @cypherSkip on FIELD_DEFINITION
-directive @generateId(argName: String) on FIELD_DEFINITION
+${directiveTypeDefs()}
 
 input Pagination {
   first: Int
