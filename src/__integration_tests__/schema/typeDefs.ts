@@ -1,16 +1,7 @@
+import { directiveTypeDefs } from '../../directives';
+
 export default `
-  input CypherConditionalStatement { statement: String!, when: String }
-  directive @cypher(
-    statement: String
-    statements: [CypherConditionalStatement!]
-  ) on FIELD_DEFINITION
-  directive @cypherSkip on FIELD_DEFINITION
-  directive @generateId(argName: String) on FIELD_DEFINITION
-  directive @relation(nodeField: String) on OBJECT
-  directive @cypherRelation(
-    statement: String
-    statements: [CypherConditionalStatement!]
-  ) on FIELD_DEFINITION
+  ${directiveTypeDefs()}
 
   type Person {
     id: ID!
@@ -18,56 +9,25 @@ export default `
     lastName: String!
     age: Int!
 
-    skills: [Skill!]!
-      @cypher(
-        statement: """
-        MATCH (parent)-[:HAS_SKILL]->(skill:Skill) RETURN skill
-        """
-      )
-    livesIn: Country!
-      @cypher(
-        statement: """
-        MATCH (parent)-[:LIVES_IN]->(country:Country) RETURN country
-        """
-      )
+    skills: [Skill!]! @cypherNode(relationship: "HAS_SKILL", direction: OUT)
+    livesIn: Country! @cypherNode(relationship: "LIVES_IN", direction: OUT)
     friendships: [UserFriendship!]!
-      @cypher(
-        statement: """
-        MATCH (parent)-[rel:FRIEND_OF]->(:Person)
-        RETURN rel
-        """
-      )
+      @cypherRelationship(type: "FRIEND_OF", direction: OUT)
 
     jobApplications: [JobApplication!]! @cypherSkip
   }
 
   type UserFriendship {
     type: String!
-    person: Person! @cypher(
-      statement: """
-      MATCH ()-[parent]->(person:Person)
-      RETURN person
-      """
-    )
+    person: Person! @cypherNode(relationship: "FRIEND_OF", direction: OUT)
   }
 
   type Skill {
     id: ID!
     name: String!
 
-    possessedBy: [Person!]!
-      @cypher(
-        statement: """
-        MATCH (parent)<-[:HAS_SKILL]-(person:Person) RETURN person
-        """
-      )
-
-    soughtBy: [Company!]!
-      @cypher(
-        statement: """
-        MATCH (parent)<-[:LOOKS_FOR_COMPETENCE]-(company:Company) RETURN company
-        """
-      )
+    possessedBy: [Person!]! @cypherNode(relationship: "HAS_SKILL", direction: IN)
+    soughtBy: [Company!]! @cypherNode(relationship: "SEEKS", direction: IN)
   }
 
   type Company {
@@ -76,38 +36,16 @@ export default `
     catchPhrase: String!
     founded: String!
 
-    seeks: [Skill!]!
-      @cypher(
-        statement: """
-        MATCH (parent)-[:SEEKS]->(skill:Skill) RETURN skill
-        """
-      )
-
-    locatedIn: Country!
-      @cypher(
-        statement: """
-        MATCH (parent)-[:LOCATED_IN]->(country:Country) RETURN country
-        """
-      )
+    seeks: [Skill!]! @cypherNode(relationship: "SEEKS", direction: OUT)
+    locatedIn: Country! @cypherNode(relationship: "LOCATED_IN", direction: OUT)
   }
 
   type Country {
     id: ID!
     name: String!
 
-    hasResidents: [Person!]!
-      @cypher(
-        statement: """
-        MATCH (parent)<-[:LIVES_IN]-(person:Person) RETURN person
-        """
-      )
-
-    hasCompanyOffice: [Company!]!
-      @cypher(
-        statement: """
-        MATCH (parent)<-[:LOCATED_IN]-(company:Company) RETURN company
-        """
-      )
+    hasResidents: [Person!]! @cypherNode(relationship: "LIVES_IN", direction: IN)
+    hasCompanyOffice: [Company!]! @cypherNode(relationship: "LOCATED_IN", direction: IN)
   }
 
   type JobApplication {
@@ -115,16 +53,14 @@ export default `
 
     applicant: Person!
       @cypher(
-        statement: """
-        MATCH (person:Person {id: parent.applicantId}) RETURN person
-        """
+        match: "(person:Person {id: parent.applicationId})"
+        return: "person"
       )
 
     company: Company!
       @cypher(
-        statement: """
-        MATCH (company:Company {id: parent.companyId}) RETURN company
-        """
+        match: "(company:Company {id: parent.companyId})"
+        return: "company"
       )
   }
 
@@ -149,23 +85,22 @@ export default `
   type Query {
     person(id: ID!): Person
       @cypher(
-        statement: """
-        MATCH (person:Person{id: $args.id}) RETURN person
-        """
+        match: "(person:Person{id: $args.id})"
+        return: "person"
       )
 
     people(pagination: PaginationInput = { first: 10, offset: 0 }): [Person!]!
       @cypher(
-        statement: """
-        MATCH (person:Person) RETURN person SKIP $args.pagination.offset LIMIT $args.pagination.first
-        """
+        match: "(person:Person)"
+        return: "person"
+        skip: "$args.pagination.offset"
+        limit: "$args.pagination.first"
       )
 
     company(id: ID!): Company
       @cypher(
-        statement: """
-        MATCH (company:Company{id: $args.id}) RETURN company
-        """
+        match: "(company:Company{id: $args.id})"
+        return: "company"
       )
 
     jobApplications: [JobApplication!]!
@@ -175,22 +110,20 @@ export default `
     createPerson(input: PersonCreateInput!): Person!
       @generateId(argName: "id")
       @cypher(
-        statement: """
-        CREATE (person:Person{id: $generated.id})
-        SET person += $args.input
-        RETURN person
-        """
+        create: "(person:Person{id: $generated.id})"
+        set: "person += $args.input"
+        return: "person"
       )
 
     updatePerson(input: PersonUpdateInput!): Person!
       @cypher(
-        statement: """
-        MATCH (person:Person{id: $args.input.id})
-        SET person.firstName = coalesce($args.input.firstName, person.firstName)
-        SET person.lastName = coalesce($args.input.lastName, person.lastName)
-        SET person.age = coalesce($args.input.age, person.age)
-        RETURN person
-        """
+        match: "(person:Person{id: $args.input.id})"
+        setMany: [
+          "person.firstName = coalesce($args.input.firstName, person.firstName)",
+          "person.lastName = coalesce($args.input.lastName, person.lastName)",
+          "person.age = coalesce($args.input.age, person.age)",
+        ]
+        return: "person"
       )
   }
 `;

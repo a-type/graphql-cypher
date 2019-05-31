@@ -22,6 +22,8 @@ export const initialize = async () => {
     });
   });
 
+  await docker.pull('neo4j:3.5', {});
+
   let container: Container;
 
   docker.run(

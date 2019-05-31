@@ -1,11 +1,7 @@
+import { directiveTypeDefs } from '../../directives';
+
 export default `
-input CypherConditionalStatement { statement: String!, when: String }
-directive @cypher(
-  statement: String
-  statements: [CypherConditionalStatement!]
-) on FIELD_DEFINITION
-directive @cypherSkip on FIELD_DEFINITION
-directive @generateId(argName: String) on FIELD_DEFINITION
+${directiveTypeDefs()}
 
 input Pagination {
   first: Int
@@ -27,9 +23,8 @@ type UserSettings {
   homepage: String!
   user: User!
     @cypher(
-      statement: """
-      MATCH (user:User {id: $parent.userId}) RETURN user
-      """
+      match: "(user:User {id: $parent.userId})"
+      return: "user"
     )
 }
 
@@ -38,11 +33,15 @@ type User {
   name: String!
   email: String!
 
+  # this one doesnt have args and can use @cypherNode.
+  simplePosts: [Post!]!
+    @cypherNode(relationship: "HAS_POST", direction: OUT)
+
   posts(
     pagination: Pagination = { first: 10, offset: 0 }
     filter: PostFilter
   ): [Post!]!
-    @cypher(statements: [
+    @cypherCustom(statements: [
       {
         when: "$args.filter"
         statement: """
@@ -69,16 +68,14 @@ type User {
 type Query {
   user(id: ID!): User
     @cypher(
-      statement: """
-      MATCH (user:User {id: $args.id}) RETURN user
-      """
+      match: "(user:User {id: $args.id})"
+      return: "user"
     )
 
   post(id: ID!): Post
     @cypher(
-      statement: """
-      MATCH (post:Post {id: $args.id}) RETURN post
-      """
+      match: "(post:Post {id: $args.id})"
+      return: "post"
     )
 
   userSettings(id: ID!): UserSettings
@@ -88,9 +85,8 @@ type Mutation {
   createUser(name: String!, email: String!): User!
     @generateId
     @cypher(
-      statement: """
-      CREATE (u:User {id: $generated.id, name: $args.name, email: $args.email}) RETURN u
-      """
+      create: "(user:User {id: $generated.id, name: $args.name, email: $args.email})"
+      return: "user"
     )
 }
 `;

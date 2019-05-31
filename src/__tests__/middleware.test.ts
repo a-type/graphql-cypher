@@ -5,7 +5,7 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { applyMiddleware } from 'graphql-middleware';
 import neo4jDriver from './mocks/neo4jDriver';
 import neo4jRecordSet from './mocks/neo4jRecordSet';
-import { CustomCypherDirective } from '../directives';
+import { directives } from '../directives';
 
 describe('the middleware', () => {
   test('works', async () => {
@@ -13,9 +13,7 @@ describe('the middleware', () => {
       makeExecutableSchema({
         typeDefs,
         resolvers: {},
-        schemaDirectives: {
-          cypher: CustomCypherDirective,
-        },
+        schemaDirectives: directives,
       }),
       middleware
     );
@@ -63,6 +61,8 @@ describe('the middleware', () => {
       },
     });
 
+    expect(result.errors).toBeUndefined();
+
     expect(result.data).toEqual({
       user: {
         name: 'Nils',
@@ -83,29 +83,35 @@ describe('the middleware', () => {
     expect(neo4jDriver._mockTransaction.run).toHaveBeenCalled();
     expect(neo4jDriver._mockTransaction.run.mock.calls[0][0])
       .toMatchInlineSnapshot(`
-            "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent AS parent MATCH (user:User {id: $args.id}) RETURN user\\", {args: $user_args, parent: $parent}) AS \`user\` RETURN \`user\` {.name, .email, posts: [user_posts IN apoc.cypher.runFirstColumnMany(\\"WITH {parent} AS parent MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
-            RETURN post
-            SKIP $args.pagination.offset
-            LIMIT $args.pagination.first\\", {args: $user_posts_args, parent: user}) | user_posts {.id, .title}]} AS \`user\`"
-        `);
+      "WITH $parent AS parent
+      MATCH (user:User {id: $field_user.args.id})
+      RETURN user {.name, .email, posts: [user_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
+      RETURN post
+      SKIP $args.pagination.offset
+      LIMIT $args.pagination.first\\", {args: $field_user_posts.args, parent: user}) | user_posts {.id, .title}]} AS user"
+    `);
     expect(neo4jDriver._mockTransaction.run.mock.calls[0][1])
       .toMatchInlineSnapshot(`
       Object {
         "context": Object {
           "foo": "bar",
         },
-        "parent": null,
-        "user_args": Object {
-          "id": "foo",
-        },
-        "user_generated": undefined,
-        "user_posts_args": Object {
-          "pagination": Object {
-            "first": 10,
-            "offset": 0,
+        "field_user": Object {
+          "args": Object {
+            "id": "foo",
           },
+          "generated": undefined,
         },
-        "user_posts_generated": undefined,
+        "field_user_posts": Object {
+          "args": Object {
+            "pagination": Object {
+              "first": 10,
+              "offset": 0,
+            },
+          },
+          "generated": undefined,
+        },
+        "parent": null,
       }
     `);
   });
@@ -165,9 +171,7 @@ describe('the middleware', () => {
             },
           },
         },
-        schemaDirectives: {
-          cypher: CustomCypherDirective,
-        },
+        schemaDirectives: directives,
       }),
       middleware
     );
@@ -199,6 +203,8 @@ describe('the middleware', () => {
         authorized: true,
       },
     });
+
+    expect(result.errors).toBeUndefined();
 
     expect(result.data).toEqual({
       user: {

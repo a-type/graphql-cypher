@@ -22,7 +22,10 @@ import {
   isInterfaceType,
   isInputObjectType,
   isUnionType,
+  isNamedType,
+  GraphQLType,
 } from 'graphql';
+import { FieldMissingError } from '../errors';
 
 export function isGraphqlScalarType(
   type: GraphQLNamedType
@@ -145,9 +148,7 @@ export const getArgumentsPlusDefaults = (
   const schemaField = schemaType.getFields()[field.name.value];
 
   if (!schemaField) {
-    throw new Error(
-      `Field "${field.name.value}" was not found on type ${schemaType.name}`
-    );
+    throw new FieldMissingError(schemaType.name, field.name.value);
   }
 
   const defaults = schemaField.args.reduce(
@@ -200,4 +201,25 @@ export const isDefaultResolver = (
   } else {
     return true;
   }
+};
+
+export const unwrapNamedType = (schemaType: GraphQLType): GraphQLNamedType => {
+  if (isNamedType(schemaType)) {
+    return schemaType;
+  }
+
+  return unwrapNamedType(schemaType.ofType);
+};
+
+export const getFieldTypeName = (
+  schemaType: GraphQLObjectType,
+  fieldName: string
+) => {
+  const field = schemaType.getFields()[fieldName];
+  if (!field) {
+    throw new FieldMissingError(schemaType.name, fieldName);
+  }
+
+  const namedType = unwrapNamedType(field.type);
+  return namedType.name;
 };
