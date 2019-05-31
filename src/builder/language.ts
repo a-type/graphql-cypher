@@ -1,4 +1,5 @@
 import { RelationshipDirection } from '../types';
+import { FIELD_PARAM_PREFIX } from './constants';
 
 export const escapeQuotes = (string: string) => string.replace(/"/g, '\\"');
 
@@ -145,7 +146,20 @@ export const createParamNamespacer = (
     (output, argName) =>
       output.replace(
         new RegExp(`\\$${argName}`, 'g'),
-        `$${namespace}.${argName}`
+        `$${FIELD_PARAM_PREFIX}${namespace}.${argName}`
       ),
     phrase
   );
+
+const nameRegex = '((\\w+)|(`[\\w\\s$!?+-@#%^&*()]+`))';
+const extractBindingRegex = `[\\(\\[]${nameRegex}(:.+?)?[\\)\\]]`;
+export const getBindings = (clause: string): string[] => {
+  // JS regexp searching is a mess...
+  const bindings: Set<string> = new Set();
+  const matcher = new RegExp(extractBindingRegex, 'g');
+  let match: RegExpExecArray | null;
+  while ((match = matcher.exec(clause))) {
+    bindings.add(match[1]);
+  }
+  return Array.from(bindings);
+};

@@ -23,6 +23,7 @@ import {
   isInputObjectType,
   isUnionType,
   isNamedType,
+  GraphQLType,
 } from 'graphql';
 import { FieldMissingError } from '../errors';
 
@@ -202,6 +203,14 @@ export const isDefaultResolver = (
   }
 };
 
+export const unwrapNamedType = (schemaType: GraphQLType): GraphQLNamedType => {
+  if (isNamedType(schemaType)) {
+    return schemaType;
+  }
+
+  return unwrapNamedType(schemaType.ofType);
+};
+
 export const getFieldTypeName = (
   schemaType: GraphQLObjectType,
   fieldName: string
@@ -211,9 +220,6 @@ export const getFieldTypeName = (
     throw new FieldMissingError(schemaType.name, fieldName);
   }
 
-  if (isNamedType(field.type)) {
-    return field.type.name;
-  } else {
-    return null;
-  }
+  const namedType = unwrapNamedType(field.type);
+  return namedType.name;
 };

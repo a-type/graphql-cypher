@@ -86,7 +86,7 @@ export default `
     person(id: ID!): Person
       @cypher(
         match: "(person:Person{id: $args.id})"
-        return "person"
+        return: "person"
       )
 
     people(pagination: PaginationInput = { first: 10, offset: 0 }): [Person!]!

@@ -1,5 +1,6 @@
 import { CypherQuery } from '../types';
 import { safeVar } from './language';
+import { FIELD_PARAM_PREFIX } from './constants';
 
 /**
  * recursively flattens and builds a set of arg object variables for a query
@@ -12,7 +13,7 @@ const buildPrefixedFieldArgVariables = ({
   fieldName: string;
   query: CypherQuery;
 }) => ({
-  [fieldName]: {
+  [`${FIELD_PARAM_PREFIX}${fieldName}`]: {
     args: query.params.args,
     generated: query.params.generated,
   },

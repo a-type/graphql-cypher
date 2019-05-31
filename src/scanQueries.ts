@@ -167,14 +167,16 @@ const extractQueriesFromField = ({
             throw new FieldMissingError(parentType.name, fieldName);
           }
 
-          if (!isObjectType(field.type)) {
+          const fieldType = extractObjectType(field.type);
+
+          if (!fieldType) {
             throw new Error(
               "Cypher relationship directive points to type which is not Object type. The library doesn't support that yet."
             );
           }
 
           const nodeDirectives = findCypherNodesDirectiveOnType({
-            schemaType: field.type,
+            schemaType: fieldType,
             directiveNames: config.directiveNames,
           });
 
@@ -192,11 +194,11 @@ const extractQueriesFromField = ({
 
           const nodeLabel =
             extractArgumentStringValue(nodeDirectives[0].directive, 'label') ||
-            getFieldTypeName(field.type, nodeDirectives[0].fieldName);
+            getFieldTypeName(fieldType, nodeDirectives[0].fieldName);
 
           if (!nodeLabel) {
             throw new Error(
-              `Cypher node on field "${field.type.name}.${
+              `Cypher node on field "${fieldType.name}.${
                 nodeDirectives[0].fieldName
               }" has no label specified and none could be inferred from return type`
             );

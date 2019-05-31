@@ -22,10 +22,9 @@ type UserSettings {
   id: ID!
   homepage: String!
   user: User!
-    @cypherCustom(
-      statement: """
-      MATCH (user:User {id: $parent.userId}) RETURN user
-      """
+    @cypher(
+      match: "(user:User {id: $parent.userId})"
+      return: "user"
     )
 }
 
@@ -33,6 +32,10 @@ type User {
   id: ID!
   name: String!
   email: String!
+
+  # this one doesnt have args and can use @cypherNode.
+  simplePosts: [Post!]!
+    @cypherNode(relationship: "HAS_POST", direction: OUT)
 
   posts(
     pagination: Pagination = { first: 10, offset: 0 }
@@ -64,17 +67,15 @@ type User {
 
 type Query {
   user(id: ID!): User
-    @cypherCustom(
-      statement: """
-      MATCH (user:User {id: $args.id}) RETURN user
-      """
+    @cypher(
+      match: "(user:User {id: $args.id})"
+      return: "user"
     )
 
   post(id: ID!): Post
-    @cypherCustom(
-      statement: """
-      MATCH (post:Post {id: $args.id}) RETURN post
-      """
+    @cypher(
+      match: "(post:Post {id: $args.id})"
+      return: "post"
     )
 
   userSettings(id: ID!): UserSettings
@@ -83,10 +84,9 @@ type Query {
 type Mutation {
   createUser(name: String!, email: String!): User!
     @generateId
-    @cypherCustom(
-      statement: """
-      CREATE (u:User {id: $generated.id, name: $args.name, email: $args.email}) RETURN u
-      """
+    @cypher(
+      create: "(user:User {id: $generated.id, name: $args.name, email: $args.email})"
+      return: "user"
     )
 }
 `;

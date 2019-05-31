@@ -24,7 +24,9 @@ import {
   safeVar,
   escapeQuotes,
   createParamNamespacer,
+  getBindings,
 } from './language';
+import { FIELD_PARAM_PREFIX } from './constants';
 
 const buildRelationshipField = ({
   fieldName,
@@ -48,8 +50,8 @@ const buildRelationshipField = ({
       direction: query.direction,
     }),
     buildNode({ label: query.nodeLabel }),
-    '|',
-    ` ${namespacedName} `,
+    ' | ',
+    `${namespacedName} `,
     buildFields({
       parentName: namespacedName,
       query,
@@ -111,7 +113,7 @@ const buildCustomSubqueryParams = ({
 }): string => {
   const paramTuples: [string, string][] = params.map(key => [
     key,
-    `$${fieldName}.${key}`,
+    `$${FIELD_PARAM_PREFIX}${fieldName}.${key}`,
   ]);
   if (parentName) {
     paramTuples.push(['parent', parentName]);
@@ -259,7 +261,13 @@ const buildBuilderQuery = ({
     limit: query.limit,
   });
   if (filters) {
-    phrases.push(buildWith(fieldName));
+    const bindings = getBindings(
+      buildPhrases([
+        buildMatch(query.match),
+        buildOptionalMatch(query.optionalMatch),
+      ])
+    );
+    phrases.push(buildWith(bindings.join(', ')));
     phrases.push(filters);
   }
 
@@ -269,10 +277,12 @@ const buildBuilderQuery = ({
   // RETURN must incorporate nested field patterns
   const fields = buildFields({
     query,
-    parentName: fieldName,
+    parentName: query.return,
     parentWasRelationship: false,
   });
-  return [body, buildReturn(`${fieldName} ${fields}`)].join('\n');
+  return [body, buildReturn(`${query.return} ${fields} AS ${fieldName}`)].join(
+    '\n'
+  );
 };
 
 const buildCustomWriteQuery = ({
@@ -299,13 +309,13 @@ const buildCustomWriteQuery = ({
       returnNames: [fieldName],
     }),
     `\n`,
-    buildReturn(`\`${fieldName}\` `),
+    buildReturn(`${fieldName} `),
     buildFields({
       parentName: fieldName,
       query,
       parentWasRelationship: false,
     }),
-    ` AS \`${fieldName}\``,
+    ` AS ${fieldName}`,
   ].join('');
 };
 
@@ -326,15 +336,15 @@ const buildCustomReadQuery = ({
       fieldName,
     }),
     query.returnsList ? ` AS x UNWIND x` : '',
-    ` AS \`${fieldName}\``,
+    ` AS ${fieldName}`,
     `\n`,
-    buildReturn(`\`${fieldName}\` `),
+    buildReturn(`${fieldName} `),
     buildFields({
       parentName: fieldName,
       query,
       parentWasRelationship: false,
     }),
-    ` AS \`${fieldName}\``,
+    ` AS ${fieldName}`,
   ].join('');
 };
 

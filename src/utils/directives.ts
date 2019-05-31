@@ -4,7 +4,6 @@ import {
   DirectiveNames,
   CypherDirective,
   RelationshipDirection,
-  CypherNodeDirective,
 } from '../types';
 import uuid from 'uuid';
 import { valueNodeToValue } from './graphql';
@@ -21,6 +20,7 @@ const getNamedArg = (
   return argument || null;
 };
 
+/** Returns an argument value as a string. Works with enums. */
 export const extractArgumentStringValue = (
   directive: DirectiveNode,
   argName: string
@@ -31,7 +31,7 @@ export const extractArgumentStringValue = (
   }
 
   const value = argument.value;
-  if (value.kind !== 'StringValue') {
+  if (value.kind !== 'StringValue' && value.kind !== 'EnumValue') {
     return undefined;
   }
   return value.value;
@@ -260,9 +260,9 @@ export const getCypherDirective = ({
     const limit = extractArgumentStringValue(directive, 'limit');
     const ret = extractArgumentStringValue(directive, 'return');
 
-    if (!match || !ret) {
+    if (!ret) {
       throw new Error(
-        `\`match\` and \`return\` arguments are required on a Cypher builder directive (type: "${
+        `\`return\` argument is required on a Cypher builder directive (type: "${
           schemaType.name
         }", field: "${fieldName}")`
       );
