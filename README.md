@@ -4,7 +4,7 @@ A simple but powerful translation layer between GraphQL and Cypher.
 
 > **Note** This library is currently coupled to Neo4j as a backing database, but I'd be happy to accept contributions to decrease that coupling if there is another graph database which uses Cypher that someone would like to support.
 
-> **Note** In its current form, all features of this library require APOC to run. See [Limitations](#limitations)
+> **Note** In its current form, certain features of this library require APOC to run. See [Limitations](#limitations)
 
 ### [Read the Documentation](#documentation)
 
@@ -43,16 +43,11 @@ type User {
 # has a shape like {accountId: String!, userId: String!}
 type UserSettings {
   account: Account!
-    @cypherCustom(
-      statement: """
-      MATCH (a:Account{id: parent.accountId}) RETURN a
-      """
-    )
+    @cypher(match: "(a:Account{id: parent.accountId})", return: "a")
 }
 
 type Query {
-  user(id: ID!): User!
-    @cypherCustom(statement: "MATCH (u:User{id:$args.id}) RETURN u")
+  user(id: ID!): User! @cypher(match: "(u:User{id:$args.id})", return: "u")
 }
 ```
 
@@ -125,15 +120,14 @@ With the middleware installed, you'll now need to add this library's custom dire
 **Using makeExecutableSchema**
 
 ```ts
-import { CustomCypherDirective } from 'graphql-cypher';
+import { directives } from 'graphql-cypher';
 import { makeExecutableSchema } from 'graphql-tools';
 
 const schema = makeExecutableSchema({
   typeDefs,
   resolvers,
-  schemaDirectives: {
-    cypherCustom: CustomCypherDirective,
-  },
+  // if you rename directives, you must assign them manually to your custom names.
+  schemaDirectives: directives,
 });
 ```
 
@@ -142,11 +136,7 @@ Now you're ready to begin adding directives to your schema. Find a field you wan
 ```graphql
 type Query {
   user(id: ID!): User
-    @cypherCustom(
-      statement: """
-      MATCH (user:User {id: $args.id}) RETURN user
-      """
-    )
+    @cypher(match: "(user:User {id: $args.id})", return: "user")
 }
 ```
 
@@ -158,7 +148,10 @@ type Query {
 > const customMiddleware = createMiddleware({
 >   directiveNames: {
 >     cypher: 'myCypher',
->     cypherSkip: 'myCypherSkip'
+>     cypherSkip: 'myCypherSkip',
+>     cypherCustom: 'myCypherCustom',
+>     cypherNode: 'myCypherNode',
+>     cypherRelationship: 'myCypherRelationship'
 >   }
 > });
 > ```
@@ -167,7 +160,115 @@ You don't need to add a resolver. Make a query against your schema and see what 
 
 ### Queries
 
-Querying your data in `graphql-cypher` is done via `@cypherCustom` directives. There are a few ways you can write your Cypher statements:
+#### Basic querying (`@cypher`, `@cypherNode`)
+
+The basic directives in this library will help you establish which parts of your schema are resolved via Cypher, and how the data is queried.
+
+##### `@cypher`: Cypher entry point
+
+The `@cypher` directive is the starting point for any Cypher-based query. Attach it to a root field, or to a field which has a non-Cypher-resolved parent.
+
+It has a variety of arguments, all of which should feel familiar; they correspond with clauses in Cypher.
+
+- `match` (`String`): The contents will be added to a `MATCH` clause. If you have a `WHERE` statement, it should be included in the string as well. If you want to match multiple paths, you can separate them with commas as usual.
+- `optionalMatch` (`String`): Similar to `match`, but for `OPTIONAL MATCH`.
+- `create` (`String`): Contents will be added to a `CREATE` clause.
+- `createMany` (`[String!]`): If you have multiple `CREATE` clauses, pass them as a list to this argument instead.
+- `merge`/`mergeMany`: Similar to `create`/`createMany`, but for `MERGE` clauses.
+- `set`/`setMany`: Similar to `create`/`createMany`, but for `SET` clauses.
+- `delete`/`deleteMany`: Similar to `create`/`createMany`, but for `DELETE` clauses.
+- `detachDelete`/`detachDeleteMany`: Similar to `create`/`createMany`, but for `DETACH DELETE` clauses.
+- `remove`/`removeMany`: Similar to `create`/`createMany`, but for `REMOVE` clauses.
+- `orderBy` (`String`): Contents will be added to an `ORDER BY` clause.
+- `skip` (`String`): Contents will be added to a `SKIP` clause.
+- `limit` (`String`): Contents will be added to a `LIMIT` clause.
+- `return` (`String!`): **required** The name of the binding which you want to return from the query. Do not add custom property selections; the libray will handle these.
+
+Using all these arguments, you can do almost any basic Cypher query. `@cypher` will be used for both queries and mutations. For queries, use it to find the node or nodes which the field returns. For mutations, use it to make changes to a node by referencing `$args`.
+
+**Example**
+
+```graphql
+type Query {
+  user(id: ID!): User @cypher(match: "(user:User{id:$args.id})", return: "user")
+  users(first: Int = 10, offset: Int = 0)
+    @cypher(
+      match: "(user:User)"
+      skip: "$args.offset"
+      limit: "$args.first"
+      return: "user"
+    )
+}
+
+type Mutation {
+  createUser(input: UserCreateInput!): User!
+    @cypher(
+      create: "(user:User)"
+      set: "user += $args.input"
+      return: "user"
+    )
+
+  updateUser(input: UserUpdateInput!): User
+    @cypher(
+      match: "(user:User{id: $args.input.id})"
+      setMany: [
+        "user.name = $args.input.name",
+        "user.age = $args.input.age"
+      ]
+      return: "user"
+    )
+}
+```
+
+##### `@cypherNode`: Traverse a relationship to another node
+
+We're working with graphs, so obviously one of the biggest things to do is traverse a relationship and add another node to our query. `@cypherNode` lets us define these connections.
+
+`@cypherNode` should be added to a field which represents another node or list of nodes in the graph relative to the parent type. It supports the following arguments:
+
+- `relationship` (`String!`): **required** The type of the connecting relationship (like "`HAS_POST`")
+- `direction` (`RelationshipDirection!`): **required** The direction of the relationship (`IN` or `OUT`). This is an enum, so no quotes are required.
+- `label` (`String`): The library will attempt to infer the label to use for the target node based on its GraphQL type name. If your type name does not match your graph node's label, supply one manually to this argument.
+
+**Example**
+
+```graphql
+type User {
+  posts: [Post!]! @cypherNode(relationship: "HAS_POST", direction: OUT)
+}
+```
+
+##### `@cypherRelationship`: Represent a relationship with a type
+
+If you're utilizing properties on relationships in your graph, you can also represent those using the `cypherRelationship` directive. Use it instead of `@cypherNode` on a field which represents a relationship. It accepts the following arguments:
+
+- `type` (`String!`): **required** The type of the relationship (like "`HAS_POST`")
+- `direction` (`RelationshipDirection!`): **required** The direction of the relationship (`IN` or `OUT`). This is an enum, so no quotes are required.
+- `nodeLabel` (`String`): We need to know the label of the target node of the relationship to make a good query, so we will try to infer it from your schema. If we can't (or if the target node label is different from your GraphQL type name), you can manually supply one here.
+
+Once you've added a `@cypherRelationship` directive to a field, you should then add a `@cypherNode` directive to the node field on your relationship type!
+
+**Example**
+
+```graphql
+type User {
+  friends: [UserFriendship!]!
+    @cypherRelationship(type: "HAS_FRIEND", direction: "OUT")
+}
+
+type UserFriendship {
+  type: String
+  friend: User! @cypherNode(relationshipType: "HAS_FRIEND", direction: "OUT")
+}
+```
+
+#### `@cypherCustom`: Custom Cypher queries (only supported with APOC)
+
+The `@cypherCustom` directive gives you full control over your Cypher query from start to finish, at the cost of performance. This feature uses APOC's custom Cypher functions under the hood, which can make queries hard for Neo4j to plan effectively. But, for complex queries that require advanced logic, it can help bridge the gap.
+
+`@cypherCustom` can be used as a 'starting point' directive like `@cypher`.
+
+There are a few ways you can write your Cypher statements:
 
 **Simple mode**: one statement per directive, which will be run every time.
 
@@ -212,74 +313,22 @@ _In conditional mode, always write your last statement without a condition._
 
 Currently, conditional mode only supports existential conditions: supply an arg name to `when`, and it will choose that statement if that arg exists. This supports deep paths.
 
-#### `@cypher` globals
+##### Mutations
 
-We've already seen the `$args` parameter, which is available to our `@cypherCustom` statements. There are a few other parameters as well:
+Like `@cypher`, `@cypherCustom` works just fine as a starting point for a mutation as well. Just add it to a root field in your `Mutation` type and write your Cypher query.
 
-- `$args`: All the arguments provided to your GraphQL field. This includes defaulted values.
-- `parent`: This is the parent of the current field; analagous to the `parent` field in a GraphQL resolver. `parent` works even if the parent of your GraphQL field wasn't resolved from Cypher! Example usage: `MATCH (parent)-[:LIKES]->(post:Post)` (for Cypher parents) or `MATCH (user:User{id: parent.userId})` (for non-Cypher parents)
-- `$context`: Pass values via a special `cypherContext` property on your GraphQL context, and they will be populated in this parameter. This is great for context-centric values like the ID or permissions of the current API user.
-- `$generated`: Any values generated by `graphql-cypher` will be available as properties on this parameter (see: [Generated Values](#generated-values))
-
-#### Rules for `@cypherCustom` directives
+##### Rules for `@cypherCustom` directives
 
 - Don't specify property selections on the returned node ("`{.id, .name}`", etc). These will be managed by the library.
 
-#### Relations
+#### `@cypher` globals
 
-You can query properties on relations using the same tools as nodes. Instead of returning a node from your custom Cypher statement, return the relation instead:
+We've already seen the `$args` parameter, which is available to our all our Cypher statements and fragments. There are a few other parameters as well:
 
-```graphql
-type User {
-  friendships: [Friendship!]!
-    @cypherCustom(
-      statement: """
-      MATCH (parent)-[rel:FRIEND_OF]->(:User)
-      RETURN rel
-      """
-    )
-}
-```
-
-On the type that represents the relationships, you can include fields which will be drawn from the properties of that relationship as usual. To continue along the path to the connected node, add a `@cypherCustom` directive and match the `parent` relationship:
-
-```graphql
-type Friendship {
-  type: String!
-  friend: User!
-    @cypherCustom(
-      statement: """
-      MATCH ()-[parent]->(friend:User)
-      RETURN friend
-      """
-    )
-}
-```
-
-> **Caveat:** Relationship types done in this way will end up making more queries in the database due to the path being separated between two different Cypher statements. This is unfortunate, but required by the design of this library. I haven't yet found a simple way to integrate relationships without introducing a bunch of semantic confusion to the library, and I really do like the simplicity of the semantics with this version, despite the drawbacks.
-
-### Mutations
-
-Mutations are pretty similar to queries. In the root field, you'll want to write some Cypher that will modify your graph. From there, any sub-selections in your mutation will be added to the mutation Cypher query just like they would have in a read query.
-
-```graphql
-type Mutation {
-  updatePerson(input: PersonUpdateInput!): Person!
-    @cypherCustom(
-      statement: """
-      MATCH (person:Person{id: $args.input.id})
-      SET person.firstName = coalesce($args.input.firstName, person.firstName)
-      SET person.lastName = coalesce($args.input.lastName, person.lastName)
-      SET person.age = coalesce($args.input.age, person.age)
-      RETURN person
-      """
-    )
-}
-```
-
-The `@cypherCustom` directive works the same way as queries; you can even use `when` to apply different statements to your mutation based on user input.
-
-_Check out [Generated Values](#generated-values) learn about the generated values utility, which can be useful for generating IDs for create mutations._
+- `$args`: All the arguments provided to your GraphQL field. This includes defaulted values.
+- `parent`: (notice: no `$`) This is the parent of the current field; analagous to the `parent` field in a GraphQL resolver. `parent` works even if the parent of your GraphQL field wasn't resolved from Cypher! Example usage: `MATCH (parent)-[:LIKES]->(post:Post)` (for Cypher parents) or `MATCH (user:User{id: parent.userId})` (for non-Cypher parents)
+- `$context`: Pass values via a special `cypherContext` property on your GraphQL context, and they will be populated in this parameter. This is great for context-centric values like the ID or permissions of the current API user.
+- `$generated`: Any values generated by `graphql-cypher` will be available as properties on this parameter (see: [Generated Values](#generated-values))
 
 ### Custom Resolver Logic
 
@@ -321,12 +370,10 @@ This library ships with utility directive support for generating some values as 
 type Mutation {
   createPerson(input: PersonCreateInput!): Person!
     @generateId(argName: "personId")
-    @cypherCustom(
-      statement: """
-      CREATE (person:Person{id: $generated.personId})
-      SET person += $args.input
-      RETURN person
-      """
+    @cypher(
+      create: "(person:Person{id: $generated.personId})"
+      set: "person += $args.input"
+      return: "person"
     )
 }
 ```
@@ -338,9 +385,7 @@ type Mutation {
 - `@cypherCustom` directives rely on the popular APOC library for Neo4j. Chances are if you're running Neo4j, you already have it installed.
 - Using `context.runCypher` to selectively fetch data only prevents the data from being queried if the field is the root field in your operation or the direct descendant of a non-Cypher-powered field. Otherwise, the data will still be fetched, but by omitting `runCypher` you will just not return it.
   - This could probably be changed, but not within the current middleware model. A new traversal to just resolve the Cypher queries before the main resolvers are called would probably need to be introduced.
-- `@cypherCustom` custom queries are probably not going to be as performant as a hand-written query. But, that is the core tradeoff of the library; it would be labor-intensive if not infeasible to try to anticipate and craft a custom query for every GraphQL query your users make.
-  - One of my first roadmap items is to investigate more 'builder-style' query directives which make a more native query instead of only supporting raw Cypher statements
-- Relationships are simply not a part of the way this library works right now. This is obviously a significant limitation, but it shouldn't be hard to change... I just haven't gotten around to defining that use case yet.
+- `@cypherCustom` custom queries are not going to be as performant as `@cypher` and the other directives, because they run Cypher fragments in user functions, which basically means they get an entirely separate query planning phase. I haven't really profiled it much, but I see a pretty significant performance increase by sticking with the standard directives whenever possible.
 
 ## Inspiration
 
