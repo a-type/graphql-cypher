@@ -25,7 +25,6 @@ import {
   escapeQuotes,
   createParamNamespacer,
   getBindings,
-  renameParentBoundNode,
   buildWhere,
 } from './language';
 import { FIELD_PARAM_PREFIX } from './constants';
@@ -34,14 +33,14 @@ const buildRelationshipField = ({
   fieldName,
   query,
   parentName,
-  parentFieldName,
+  namespace,
 }: {
   fieldName: string;
   query: RelationshipCypherQuery;
   parentName: string;
-  parentFieldName: string;
+  namespace: string;
 }) => {
-  const namespacedName = `${parentFieldName}_${fieldName}`;
+  const namespacedName = `${namespace}_${fieldName}`;
   const nodeBindingName = `${namespacedName}_node`;
   const namespaceParams = createParamNamespacer(namespacedName);
 
@@ -73,7 +72,7 @@ const buildRelationshipField = ({
       parentName: namespacedName,
       query,
       parentWasRelationship: true,
-      parentFieldName,
+      namespace: namespacedName,
     }),
     ']',
   ].join('');
@@ -83,16 +82,16 @@ const buildNodeField = ({
   fieldName,
   query,
   parentName,
-  parentFieldName,
+  namespace,
   parentWasRelationship,
 }: {
   fieldName: string;
   query: NodeCypherQuery;
   parentName: string;
-  parentFieldName: string;
+  namespace: string;
   parentWasRelationship: boolean;
 }) => {
-  const namespacedName = `${parentFieldName}_${fieldName}`;
+  const namespacedName = `${namespace}_${fieldName}`;
   const namespaceParams = createParamNamespacer(namespacedName);
   const relationshipBindingName = parentWasRelationship
     ? parentName
@@ -126,7 +125,7 @@ const buildNodeField = ({
       parentName: namespacedName,
       query,
       parentWasRelationship: false,
-      parentFieldName,
+      namespace: namespacedName,
     }),
     ']',
     query.returnsList ? '' : ')',
@@ -188,14 +187,14 @@ const buildCustomField = ({
   fieldName,
   parentName,
   query,
-  parentFieldName,
+  namespace,
 }: {
   fieldName: string;
   parentName: string;
   query: CustomCypherQuery;
-  parentFieldName: string;
+  namespace: string;
 }) => {
-  const namespacedName = `${parentName}_${fieldName}`;
+  const namespacedName = `${namespace}_${fieldName}`;
 
   return [
     `${fieldName}: `,
@@ -211,7 +210,7 @@ const buildCustomField = ({
       query,
       parentName: namespacedName,
       parentWasRelationship: false,
-      parentFieldName,
+      namespace: namespacedName,
     }),
     `]`,
     query.returnsList ? '' : ')',
@@ -221,12 +220,12 @@ const buildCustomField = ({
 const buildFields = ({
   query,
   parentName,
-  parentFieldName,
+  namespace,
   parentWasRelationship,
 }: {
   query: CypherQuery;
   parentName: string;
-  parentFieldName: string;
+  namespace: string;
   parentWasRelationship: boolean;
 }) => {
   if (!query.fields.length) {
@@ -251,21 +250,21 @@ const buildFields = ({
             parentName,
             query: fieldQuery,
             parentWasRelationship,
-            parentFieldName,
+            namespace,
           });
         } else if (fieldQuery.kind === 'RelationshipCypherQuery') {
           return buildRelationshipField({
             fieldName,
             parentName,
             query: fieldQuery,
-            parentFieldName,
+            namespace,
           });
         } else if (fieldQuery.kind === 'CustomCypherQuery') {
           return buildCustomField({
             fieldName,
             parentName,
             query: fieldQuery,
-            parentFieldName,
+            namespace,
           });
         }
       })
@@ -323,7 +322,7 @@ const buildBuilderQuery = ({
   const fields = buildFields({
     query,
     parentName: query.return,
-    parentFieldName: fieldName,
+    namespace: fieldName,
     parentWasRelationship: false,
   });
   return [body, buildReturn(`${query.return} ${fields} AS ${fieldName}`)].join(
@@ -360,7 +359,7 @@ const buildCustomWriteQuery = ({
       parentName: fieldName,
       query,
       parentWasRelationship: false,
-      parentFieldName: fieldName,
+      namespace: fieldName,
     }),
     ` AS ${fieldName}`,
   ].join('');
@@ -390,7 +389,7 @@ const buildCustomReadQuery = ({
       parentName: fieldName,
       query,
       parentWasRelationship: false,
-      parentFieldName: fieldName,
+      namespace: fieldName,
     }),
     ` AS ${fieldName}`,
   ].join('');
