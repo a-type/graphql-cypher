@@ -2,7 +2,7 @@ import { GraphQLObjectType, ArgumentNode, DirectiveNode } from 'graphql';
 import {
   CypherConditionalStatement,
   DirectiveNames,
-  CypherDirective,
+  CypherDirectiveArgs,
   RelationshipDirection,
 } from '../types';
 import uuid from 'uuid';
@@ -171,7 +171,7 @@ export const getCypherDirective = ({
   fieldName: string;
   directiveNames: DirectiveNames;
   args: { [name: string]: any };
-}): CypherDirective | null => {
+}): CypherDirectiveArgs | null => {
   const directives: DirectiveNode[] = [
     directiveNames.cypher,
     directiveNames.cypherNode,

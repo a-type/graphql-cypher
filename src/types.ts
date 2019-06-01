@@ -67,11 +67,6 @@ export type CypherConditionalStatement = {
   when?: string | null;
 };
 
-export type CypherDirectiveArgs = {
-  statement?: string;
-  statements?: CypherConditionalStatement[];
-};
-
 export type CypherQueryFieldMap = { [path: string]: CypherQuery };
 
 export type AugmentedContext = { [key: string]: any } & {
@@ -97,7 +92,7 @@ export type DirectiveNames = {
   generateId: string;
 };
 
-export type CypherBuilderDirective = {
+export type CypherBuilderDirectiveArgs = {
   kind: 'CypherBuilderDirective';
   match?: string;
   optionalMatch?: string;
@@ -113,27 +108,27 @@ export type CypherBuilderDirective = {
   return: string;
 };
 
-export type CypherNodeDirective = {
+export type CypherNodeDirectiveArgs = {
   kind: 'CypherNodeDirective';
   relationship: string;
   direction: RelationshipDirection;
   label?: string;
 };
 
-export type CypherRelationshipDirective = {
+export type CypherRelationshipDirectiveArgs = {
   kind: 'CypherRelationshipDirective';
   relationshipType: string;
   direction: RelationshipDirection;
   nodeLabel?: string;
 };
 
-export type CypherCustomDirective = {
+export type CypherCustomDirectiveArgs = {
   kind: 'CypherCustomDirective';
   cypher: string;
 };
 
-export type CypherDirective =
-  | CypherBuilderDirective
-  | CypherNodeDirective
-  | CypherRelationshipDirective
-  | CypherCustomDirective;
+export type CypherDirectiveArgs =
+  | CypherBuilderDirectiveArgs
+  | CypherNodeDirectiveArgs
+  | CypherRelationshipDirectiveArgs
+  | CypherCustomDirectiveArgs;
