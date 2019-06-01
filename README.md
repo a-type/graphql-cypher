@@ -229,6 +229,7 @@ We're working with graphs, so obviously one of the biggest things to do is trave
 - `relationship` (`String!`): **required** The type of the connecting relationship (like "`HAS_POST`")
 - `direction` (`RelationshipDirection!`): **required** The direction of the relationship (`IN` or `OUT`). This is an enum, so no quotes are required.
 - `label` (`String`): The library will attempt to infer the label to use for the target node based on its GraphQL type name. If your type name does not match your graph node's label, supply one manually to this argument.
+- `where` (`String`): Add a `WHERE` clause to your node connection to filter the results. Use the preset `node` and `relationship` bindings to create predicates based on the matched node or relationship: `where: "node.age > $args.ageLimit"`
 
 **Example**
 
@@ -245,6 +246,7 @@ If you're utilizing properties on relationships in your graph, you can also repr
 - `type` (`String!`): **required** The type of the relationship (like "`HAS_POST`")
 - `direction` (`RelationshipDirection!`): **required** The direction of the relationship (`IN` or `OUT`). This is an enum, so no quotes are required.
 - `nodeLabel` (`String`): We need to know the label of the target node of the relationship to make a good query, so we will try to infer it from your schema. If we can't (or if the target node label is different from your GraphQL type name), you can manually supply one here.
+- `where` (`String`): Add a `WHERE` clause to your node connection to filter the results. Use the preset `node` and `relationship` bindings to create predicates based on the matched node or relationship: `where: "node.age > $args.ageLimit"`
 
 Once you've added a `@cypherRelationship` directive to a field, you should then add a `@cypherNode` directive to the node field on your relationship type!
 
