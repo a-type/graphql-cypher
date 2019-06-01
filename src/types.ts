@@ -25,6 +25,7 @@ export type BaseCypherQuery = {
 export type CustomCypherQuery = BaseCypherQuery & {
   kind: 'CustomCypherQuery';
   cypher: string;
+  returnsRelationship: boolean;
 };
 
 export type BuilderCypherQuery = BaseCypherQuery & {
@@ -139,6 +140,7 @@ export type CypherRelationshipDirectiveArgs = {
 export type CypherCustomDirectiveArgs = {
   kind: 'CypherCustomDirective';
   cypher: string;
+  returnsRelationship: boolean;
 };
 
 export type CypherVirtualDirectiveArgs = {

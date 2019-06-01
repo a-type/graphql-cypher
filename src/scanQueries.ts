@@ -135,6 +135,7 @@ const extractQueriesFromField = ({
           ...baseQueryProperties,
           kind: 'CustomCypherQuery',
           cypher: cypherDirective.cypher,
+          returnsRelationship: cypherDirective.returnsRelationship,
         };
       } else if (cypherDirective.kind === 'CypherBuilderDirective') {
         currentQuery = {

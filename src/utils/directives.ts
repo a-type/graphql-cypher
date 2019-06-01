@@ -67,6 +67,22 @@ export const extractArgumentArrayValue = (
     .filter(Boolean) as string[];
 };
 
+export const extractArgumentBooleanValue = (
+  directive: DirectiveNode,
+  argName: string
+): boolean | undefined => {
+  const argument = getNamedArg(directive, argName);
+  if (!argument) {
+    return undefined;
+  }
+
+  const value = argument.value;
+  if (value.kind !== 'BooleanValue') {
+    return undefined;
+  }
+  return value.value;
+};
+
 export const isCypherSkip = (
   schemaType: GraphQLObjectType,
   fieldName: string,
@@ -242,10 +258,16 @@ export const getCypherDirective = ({
 
   if (directive.name.value === directiveNames.cypherCustom) {
     const statement = extractArgumentStringValue(directive, 'statement');
+    const returnsRelationship = !!extractArgumentBooleanValue(
+      directive,
+      'returnsRelationship'
+    );
+
     if (statement) {
       return {
         kind: 'CypherCustomDirective',
         cypher: statement,
+        returnsRelationship,
       };
     }
 
@@ -274,6 +296,7 @@ export const getCypherDirective = ({
     return {
       kind: 'CypherCustomDirective',
       cypher: matching.statement,
+      returnsRelationship,
     };
   } else if (directive.name.value === directiveNames.cypher) {
     const match = extractArgumentStringValue(directive, 'match');

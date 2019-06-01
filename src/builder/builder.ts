@@ -235,7 +235,7 @@ const buildCustomField = ({
     buildFields({
       query,
       parentName: namespacedName,
-      parentWasRelationship: false,
+      parentWasRelationship: query.returnsRelationship,
       namespace: namespacedName,
     }),
     `]`,

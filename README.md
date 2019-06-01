@@ -364,6 +364,13 @@ _In conditional mode, always write your last statement without a condition._
 
 Currently, conditional mode only supports existential conditions: supply an arg name to `when`, and it will choose that statement if that arg exists. This supports deep paths.
 
+`@cypherCustom` arguments:
+
+- `statement` (`String`): A single Cypher statement to run
+- `statements` ([`ConditionalCypherStatement`!]): A list of conditional statements to test and run, in order.
+  - A conditional statement has the form: `{ when: String, statement: String! }`
+- `returnsRelationship` (`Boolean`): Indicate if the custom Cypher statement will return a relationship or relationships instead of nodes. This is required if your statement returns relationships, or `@cypherNode` and `@cypherRelationship` directives on nested fields will generate invalid Cypher.
+
 ##### Mutations
 
 Like `@cypher`, `@cypherCustom` works just fine as a starting point for a mutation as well. Just add it to a root field in your `Mutation` type and write your Cypher query.
