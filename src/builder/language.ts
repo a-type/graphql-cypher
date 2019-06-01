@@ -163,3 +163,12 @@ export const getBindings = (clause: string): string[] => {
   }
   return Array.from(bindings);
 };
+
+/**
+ * Renames any usage of (parent) or parent.foo with a new
+ * binding name for the parent.
+ */
+export const renameParentBoundNode = (phrase: string, newParentName: string) =>
+  phrase
+    .replace(/\(parent\)/g, `(${newParentName})`)
+    .replace(/\Wparent./g, `(${newParentName})`);

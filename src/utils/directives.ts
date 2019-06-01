@@ -287,6 +287,7 @@ export const getCypherDirective = ({
     const relationship = extractArgumentStringValue(directive, 'relationship');
     const direction = extractArgumentStringValue(directive, 'direction');
     const label = extractArgumentStringValue(directive, 'label');
+    const where = extractArgumentStringValue(directive, 'where');
 
     if (!relationship || !direction || !isRelationshipDirection(direction)) {
       throw new Error(
@@ -301,11 +302,13 @@ export const getCypherDirective = ({
       relationship,
       direction,
       label,
+      where,
     };
   } else if (directive.name.value === directiveNames.cypherRelationship) {
     const relationshipType = extractArgumentStringValue(directive, 'type');
     const direction = extractArgumentStringValue(directive, 'direction');
     const nodeLabel = extractArgumentStringValue(directive, 'nodeLabel');
+    const where = extractArgumentStringValue(directive, 'where');
 
     if (
       !relationshipType ||
@@ -324,6 +327,7 @@ export const getCypherDirective = ({
       relationshipType,
       direction,
       nodeLabel,
+      where,
     };
   }
 

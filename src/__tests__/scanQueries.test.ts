@@ -77,38 +77,38 @@ describe('scanning queries from an operation', () => {
 
     const result = await expectCypher(query);
     expect(result).toMatchInlineSnapshot(`
-      Object {
-        "user": Object {
-          "create": Array [],
-          "delete": Array [],
-          "detachDelete": Array [],
-          "fieldQueries": Object {},
-          "fields": Array [
-            "name",
-            "email",
-          ],
-          "kind": "BuilderCypherQuery",
-          "limit": undefined,
-          "match": "(user:User {id: $args.id})",
-          "merge": Array [],
-          "optionalMatch": undefined,
-          "orderBy": undefined,
-          "paramNames": Array [
-            "args",
-          ],
-          "params": Object {
-            "args": Object {
-              "id": "foo",
-            },
-          },
-          "remove": Array [],
-          "return": "user",
-          "returnsList": false,
-          "set": Array [],
-          "skip": undefined,
-        },
-      }
-    `);
+            Object {
+              "user": Object {
+                "create": Array [],
+                "delete": Array [],
+                "detachDelete": Array [],
+                "fieldQueries": Object {},
+                "fields": Array [
+                  "name",
+                  "email",
+                ],
+                "kind": "BuilderCypherQuery",
+                "limit": undefined,
+                "match": "(user:User {id: $args.id})",
+                "merge": Array [],
+                "optionalMatch": undefined,
+                "orderBy": undefined,
+                "paramNames": Array [
+                  "args",
+                ],
+                "params": Object {
+                  "args": Object {
+                    "id": "foo",
+                  },
+                },
+                "remove": Array [],
+                "return": "user",
+                "returnsList": false,
+                "set": Array [],
+                "skip": undefined,
+              },
+            }
+        `);
   });
 
   test('works on a single query with nested nodes', async () => {
@@ -148,6 +148,7 @@ describe('scanning queries from an operation', () => {
               "params": Object {},
               "relationship": "HAS_POST",
               "returnsList": true,
+              "where": undefined,
             },
           },
           "fields": Array [
@@ -196,37 +197,37 @@ describe('scanning queries from an operation', () => {
 
     const result = await expectCypher(query);
     expect(result).toMatchInlineSnapshot(`
-      Object {
-        "user": Object {
-          "create": Array [],
-          "delete": Array [],
-          "detachDelete": Array [],
-          "fieldQueries": Object {},
-          "fields": Array [
-            "id",
-          ],
-          "kind": "BuilderCypherQuery",
-          "limit": undefined,
-          "match": "(user:User {id: $args.id})",
-          "merge": Array [],
-          "optionalMatch": undefined,
-          "orderBy": undefined,
-          "paramNames": Array [
-            "args",
-          ],
-          "params": Object {
-            "args": Object {
-              "id": "foo",
-            },
-          },
-          "remove": Array [],
-          "return": "user",
-          "returnsList": false,
-          "set": Array [],
-          "skip": undefined,
-        },
-      }
-    `);
+            Object {
+              "user": Object {
+                "create": Array [],
+                "delete": Array [],
+                "detachDelete": Array [],
+                "fieldQueries": Object {},
+                "fields": Array [
+                  "id",
+                ],
+                "kind": "BuilderCypherQuery",
+                "limit": undefined,
+                "match": "(user:User {id: $args.id})",
+                "merge": Array [],
+                "optionalMatch": undefined,
+                "orderBy": undefined,
+                "paramNames": Array [
+                  "args",
+                ],
+                "params": Object {
+                  "args": Object {
+                    "id": "foo",
+                  },
+                },
+                "remove": Array [],
+                "return": "user",
+                "returnsList": false,
+                "set": Array [],
+                "skip": undefined,
+              },
+            }
+        `);
   });
 
   test('works with custom directive names', async () => {
@@ -253,37 +254,37 @@ describe('scanning queries from an operation', () => {
       cypherRelationship: 'myCypherRelationship',
     });
     expect(result).toMatchInlineSnapshot(`
-      Object {
-        "user": Object {
-          "create": Array [],
-          "delete": Array [],
-          "detachDelete": Array [],
-          "fieldQueries": Object {},
-          "fields": Array [
-            "id",
-          ],
-          "kind": "BuilderCypherQuery",
-          "limit": undefined,
-          "match": "(user:User {id: $args.id})",
-          "merge": Array [],
-          "optionalMatch": undefined,
-          "orderBy": undefined,
-          "paramNames": Array [
-            "args",
-          ],
-          "params": Object {
-            "args": Object {
-              "id": "foo",
-            },
-          },
-          "remove": Array [],
-          "return": "user",
-          "returnsList": false,
-          "set": Array [],
-          "skip": undefined,
-        },
-      }
-    `);
+            Object {
+              "user": Object {
+                "create": Array [],
+                "delete": Array [],
+                "detachDelete": Array [],
+                "fieldQueries": Object {},
+                "fields": Array [
+                  "id",
+                ],
+                "kind": "BuilderCypherQuery",
+                "limit": undefined,
+                "match": "(user:User {id: $args.id})",
+                "merge": Array [],
+                "optionalMatch": undefined,
+                "orderBy": undefined,
+                "paramNames": Array [
+                  "args",
+                ],
+                "params": Object {
+                  "args": Object {
+                    "id": "foo",
+                  },
+                },
+                "remove": Array [],
+                "return": "user",
+                "returnsList": false,
+                "set": Array [],
+                "skip": undefined,
+              },
+            }
+        `);
   });
 
   test('works with multiple branches of distinct queries', async () => {
@@ -327,6 +328,7 @@ describe('scanning queries from an operation', () => {
               "params": Object {},
               "relationship": "HAS_POST",
               "returnsList": true,
+              "where": undefined,
             },
           },
           "fields": Array [
@@ -398,68 +400,68 @@ describe('scanning queries from an operation', () => {
 
     const result = await expectCypher(query);
     expect(result).toMatchInlineSnapshot(`
-      Object {
-        "user": Object {
-          "create": Array [],
-          "delete": Array [],
-          "detachDelete": Array [],
-          "fieldQueries": Object {
-            "posts": Object {
-              "cypher": "MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
-      WHERE post.title =~ $args.filter.titleMatch
-      RETURN post
-      SKIP $args.pagination.offset
-      LIMIT $args.pagination.first",
-              "fieldQueries": Object {},
-              "fields": Array [
-                "id",
-                "title",
-              ],
-              "kind": "CustomCypherQuery",
-              "paramNames": Array [
-                "args",
-              ],
-              "params": Object {
-                "args": Object {
-                  "filter": Object {
-                    "titleMatch": "bar",
-                  },
-                  "pagination": Object {
-                    "first": 5,
-                    "offset": 10,
+            Object {
+              "user": Object {
+                "create": Array [],
+                "delete": Array [],
+                "detachDelete": Array [],
+                "fieldQueries": Object {
+                  "posts": Object {
+                    "cypher": "MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
+            WHERE post.title =~ $args.filter.titleMatch
+            RETURN post
+            SKIP $args.pagination.offset
+            LIMIT $args.pagination.first",
+                    "fieldQueries": Object {},
+                    "fields": Array [
+                      "id",
+                      "title",
+                    ],
+                    "kind": "CustomCypherQuery",
+                    "paramNames": Array [
+                      "args",
+                    ],
+                    "params": Object {
+                      "args": Object {
+                        "filter": Object {
+                          "titleMatch": "bar",
+                        },
+                        "pagination": Object {
+                          "first": 5,
+                          "offset": 10,
+                        },
+                      },
+                    },
+                    "returnsList": true,
                   },
                 },
+                "fields": Array [
+                  "id",
+                  "name",
+                  "posts",
+                ],
+                "kind": "BuilderCypherQuery",
+                "limit": undefined,
+                "match": "(user:User {id: $args.id})",
+                "merge": Array [],
+                "optionalMatch": undefined,
+                "orderBy": undefined,
+                "paramNames": Array [
+                  "args",
+                ],
+                "params": Object {
+                  "args": Object {
+                    "id": "foo",
+                  },
+                },
+                "remove": Array [],
+                "return": "user",
+                "returnsList": false,
+                "set": Array [],
+                "skip": undefined,
               },
-              "returnsList": true,
-            },
-          },
-          "fields": Array [
-            "id",
-            "name",
-            "posts",
-          ],
-          "kind": "BuilderCypherQuery",
-          "limit": undefined,
-          "match": "(user:User {id: $args.id})",
-          "merge": Array [],
-          "optionalMatch": undefined,
-          "orderBy": undefined,
-          "paramNames": Array [
-            "args",
-          ],
-          "params": Object {
-            "args": Object {
-              "id": "foo",
-            },
-          },
-          "remove": Array [],
-          "return": "user",
-          "returnsList": false,
-          "set": Array [],
-          "skip": undefined,
-        },
-      }
-    `);
+            }
+        `);
   });
 
   test('works with aliases', async () => {
@@ -481,60 +483,60 @@ describe('scanning queries from an operation', () => {
 
     const result = await expectCypher(query);
     expect(result).toMatchInlineSnapshot(`
-      Object {
-        "alias": Object {
-          "create": Array [],
-          "delete": Array [],
-          "detachDelete": Array [],
-          "fieldQueries": Object {},
-          "fields": Array [
-            "name",
-            "email",
-          ],
-          "kind": "BuilderCypherQuery",
-          "limit": undefined,
-          "match": "(user:User {id: $args.id})",
-          "merge": Array [],
-          "optionalMatch": undefined,
-          "orderBy": undefined,
-          "paramNames": Array [
-            "args",
-          ],
-          "params": Object {
-            "args": Object {
-              "id": "foo",
-            },
-          },
-          "remove": Array [],
-          "return": "user",
-          "returnsList": false,
-          "set": Array [],
-          "skip": undefined,
-        },
-        "alias,settings,alias2": Object {
-          "create": Array [],
-          "delete": Array [],
-          "detachDelete": Array [],
-          "fieldQueries": Object {},
-          "fields": Array [
-            "id",
-          ],
-          "kind": "BuilderCypherQuery",
-          "limit": undefined,
-          "match": "(user:User {id: $parent.userId})",
-          "merge": Array [],
-          "optionalMatch": undefined,
-          "orderBy": undefined,
-          "paramNames": Array [],
-          "params": Object {},
-          "remove": Array [],
-          "return": "user",
-          "returnsList": false,
-          "set": Array [],
-          "skip": undefined,
-        },
-      }
-    `);
+            Object {
+              "alias": Object {
+                "create": Array [],
+                "delete": Array [],
+                "detachDelete": Array [],
+                "fieldQueries": Object {},
+                "fields": Array [
+                  "name",
+                  "email",
+                ],
+                "kind": "BuilderCypherQuery",
+                "limit": undefined,
+                "match": "(user:User {id: $args.id})",
+                "merge": Array [],
+                "optionalMatch": undefined,
+                "orderBy": undefined,
+                "paramNames": Array [
+                  "args",
+                ],
+                "params": Object {
+                  "args": Object {
+                    "id": "foo",
+                  },
+                },
+                "remove": Array [],
+                "return": "user",
+                "returnsList": false,
+                "set": Array [],
+                "skip": undefined,
+              },
+              "alias,settings,alias2": Object {
+                "create": Array [],
+                "delete": Array [],
+                "detachDelete": Array [],
+                "fieldQueries": Object {},
+                "fields": Array [
+                  "id",
+                ],
+                "kind": "BuilderCypherQuery",
+                "limit": undefined,
+                "match": "(user:User {id: $parent.userId})",
+                "merge": Array [],
+                "optionalMatch": undefined,
+                "orderBy": undefined,
+                "paramNames": Array [],
+                "params": Object {},
+                "remove": Array [],
+                "return": "user",
+                "returnsList": false,
+                "set": Array [],
+                "skip": undefined,
+              },
+            }
+        `);
   });
 
   test('adds generated parameters', async () => {
@@ -551,44 +553,44 @@ describe('scanning queries from an operation', () => {
 
     const result = await expectCypher(query);
     expect(result).toMatchInlineSnapshot(`
-      Object {
-        "createUser": Object {
-          "create": Array [
-            "(user:User {id: $generated.id, name: $args.name, email: $args.email})",
-          ],
-          "delete": Array [],
-          "detachDelete": Array [],
-          "fieldQueries": Object {},
-          "fields": Array [
-            "id",
-            "name",
-          ],
-          "kind": "BuilderCypherQuery",
-          "limit": undefined,
-          "match": undefined,
-          "merge": Array [],
-          "optionalMatch": undefined,
-          "orderBy": undefined,
-          "paramNames": Array [
-            "args",
-            "generated",
-          ],
-          "params": Object {
-            "args": Object {
-              "email": "bar@baz.com",
-              "name": "foo",
-            },
-            "generated": Object {
-              "id": "mock-uuid",
-            },
-          },
-          "remove": Array [],
-          "return": "user",
-          "returnsList": false,
-          "set": Array [],
-          "skip": undefined,
-        },
-      }
-    `);
+            Object {
+              "createUser": Object {
+                "create": Array [
+                  "(user:User {id: $generated.id, name: $args.name, email: $args.email})",
+                ],
+                "delete": Array [],
+                "detachDelete": Array [],
+                "fieldQueries": Object {},
+                "fields": Array [
+                  "id",
+                  "name",
+                ],
+                "kind": "BuilderCypherQuery",
+                "limit": undefined,
+                "match": undefined,
+                "merge": Array [],
+                "optionalMatch": undefined,
+                "orderBy": undefined,
+                "paramNames": Array [
+                  "args",
+                  "generated",
+                ],
+                "params": Object {
+                  "args": Object {
+                    "email": "bar@baz.com",
+                    "name": "foo",
+                  },
+                  "generated": Object {
+                    "id": "mock-uuid",
+                  },
+                },
+                "remove": Array [],
+                "return": "user",
+                "returnsList": false,
+                "set": Array [],
+                "skip": undefined,
+              },
+            }
+        `);
   });
 });

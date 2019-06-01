@@ -83,11 +83,13 @@ directive @${directiveNames.cypherNode}(
   relationship: String!
   direction: CypherRelationshipDirection!
   label: String
+  where: String
 ) on FIELD_DEFINITION
 directive @${directiveNames.cypherRelationship}(
   type: String!
   direction: CypherRelationshipDirection!
   nodeLabel: String
+  where: String
 ) on FIELD_DEFINITION
 directive @${directiveNames.generateId}(
   argName: String

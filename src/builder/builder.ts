@@ -25,6 +25,8 @@ import {
   escapeQuotes,
   createParamNamespacer,
   getBindings,
+  renameParentBoundNode,
+  buildWhere,
 } from './language';
 import { FIELD_PARAM_PREFIX } from './constants';
 
@@ -32,12 +34,16 @@ const buildRelationshipField = ({
   fieldName,
   query,
   parentName,
+  parentFieldName,
 }: {
   fieldName: string;
   query: RelationshipCypherQuery;
   parentName: string;
+  parentFieldName: string;
 }) => {
-  const namespacedName = `${parentName}_${fieldName}`;
+  const namespacedName = `${parentFieldName}_${fieldName}`;
+  const nodeBindingName = `${namespacedName}_node`;
+  const namespaceParams = createParamNamespacer(namespacedName);
 
   return [
     `${fieldName}: `,
@@ -49,13 +55,25 @@ const buildRelationshipField = ({
       binding: namespacedName,
       direction: query.direction,
     }),
-    buildNode({ label: query.nodeLabel }),
+    buildNode({ binding: nodeBindingName, label: query.nodeLabel }),
+    // rename placeholders to binding names
+    query.where
+      ? ' ' +
+        buildWhere(
+          namespaceParams(
+            query.where
+              .replace(/relationship/g, namespacedName)
+              .replace(/node/g, nodeBindingName)
+          )
+        )
+      : '',
     ' | ',
     `${namespacedName} `,
     buildFields({
       parentName: namespacedName,
       query,
       parentWasRelationship: true,
+      parentFieldName,
     }),
     ']',
   ].join('');
@@ -65,14 +83,20 @@ const buildNodeField = ({
   fieldName,
   query,
   parentName,
+  parentFieldName,
   parentWasRelationship,
 }: {
   fieldName: string;
   query: NodeCypherQuery;
   parentName: string;
+  parentFieldName: string;
   parentWasRelationship: boolean;
 }) => {
-  const namespacedName = `${parentName}_${fieldName}`;
+  const namespacedName = `${parentFieldName}_${fieldName}`;
+  const namespaceParams = createParamNamespacer(namespacedName);
+  const relationshipBindingName = parentWasRelationship
+    ? parentName
+    : `${namespacedName}_relationship`;
 
   return [
     `${fieldName}: `,
@@ -80,17 +104,29 @@ const buildNodeField = ({
     '[',
     buildNode({ binding: parentWasRelationship ? undefined : parentName }),
     buildRelationship({
-      binding: parentWasRelationship ? parentName : undefined,
+      binding: relationshipBindingName,
       label: query.relationship,
       direction: query.direction,
     }),
     buildNode({ binding: namespacedName, label: query.label }),
+    // rename 'node' placeholder to binding name
+    query.where
+      ? ' ' +
+        buildWhere(
+          namespaceParams(
+            query.where
+              .replace(/node/g, namespacedName)
+              .replace(/relationship/g, relationshipBindingName)
+          )
+        )
+      : '',
     ' | ',
     `${namespacedName} `,
     buildFields({
       parentName: namespacedName,
       query,
       parentWasRelationship: false,
+      parentFieldName,
     }),
     ']',
     query.returnsList ? '' : ')',
@@ -152,10 +188,12 @@ const buildCustomField = ({
   fieldName,
   parentName,
   query,
+  parentFieldName,
 }: {
   fieldName: string;
   parentName: string;
   query: CustomCypherQuery;
+  parentFieldName: string;
 }) => {
   const namespacedName = `${parentName}_${fieldName}`;
 
@@ -173,6 +211,7 @@ const buildCustomField = ({
       query,
       parentName: namespacedName,
       parentWasRelationship: false,
+      parentFieldName,
     }),
     `]`,
     query.returnsList ? '' : ')',
@@ -182,10 +221,12 @@ const buildCustomField = ({
 const buildFields = ({
   query,
   parentName,
+  parentFieldName,
   parentWasRelationship,
 }: {
   query: CypherQuery;
   parentName: string;
+  parentFieldName: string;
   parentWasRelationship: boolean;
 }) => {
   if (!query.fields.length) {
@@ -210,21 +251,25 @@ const buildFields = ({
             parentName,
             query: fieldQuery,
             parentWasRelationship,
+            parentFieldName,
           });
         } else if (fieldQuery.kind === 'RelationshipCypherQuery') {
           return buildRelationshipField({
             fieldName,
             parentName,
             query: fieldQuery,
+            parentFieldName,
           });
         } else if (fieldQuery.kind === 'CustomCypherQuery') {
           return buildCustomField({
             fieldName,
             parentName,
             query: fieldQuery,
+            parentFieldName,
           });
         }
       })
+      .filter(Boolean)
       .join(', '),
     '}',
   ].join('');
@@ -278,6 +323,7 @@ const buildBuilderQuery = ({
   const fields = buildFields({
     query,
     parentName: query.return,
+    parentFieldName: fieldName,
     parentWasRelationship: false,
   });
   return [body, buildReturn(`${query.return} ${fields} AS ${fieldName}`)].join(
@@ -314,6 +360,7 @@ const buildCustomWriteQuery = ({
       parentName: fieldName,
       query,
       parentWasRelationship: false,
+      parentFieldName: fieldName,
     }),
     ` AS ${fieldName}`,
   ].join('');
@@ -343,6 +390,7 @@ const buildCustomReadQuery = ({
       parentName: fieldName,
       query,
       parentWasRelationship: false,
+      parentFieldName: fieldName,
     }),
     ` AS ${fieldName}`,
   ].join('');

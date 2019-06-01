@@ -1,6 +1,7 @@
 import { v1 as neo4j } from 'neo4j-driver';
-import { seed, random, company, name, hacker, date, address } from 'faker';
+import { seed, random, company, name, date, address } from 'faker';
 
+// required to make generated values stable!
 seed(345636);
 
 export const people = new Array(5).fill(null).map(() => ({
@@ -10,9 +11,24 @@ export const people = new Array(5).fill(null).map(() => ({
   age: random.number({ min: 20, max: 70 }),
 }));
 
-export const skills = new Array(5).fill(null).map(() => ({
+const skillNames = [
+  'react',
+  'graphql',
+  'graph databases',
+  'typescript',
+  'devops',
+];
+const skillCategories = [
+  'frontend',
+  'backend',
+  'backend',
+  'frontend',
+  'backend',
+];
+export const skills = new Array(5).fill(null).map((_, idx) => ({
   id: random.uuid(),
-  name: hacker.ingverb(),
+  name: skillNames[idx],
+  category: skillCategories[idx],
 }));
 
 export const companies = new Array(7).fill(null).map(() => ({
@@ -28,16 +44,19 @@ export const countries = new Array(3).fill(null).map(() => ({
 }));
 
 export const userSkills = [
-  [people[0].id, skills[0].id],
-  [people[0].id, skills[1].id],
-  [people[1].id, skills[2].id],
-  [people[2].id, skills[0].id],
-  [people[2].id, skills[3].id],
-  [people[2].id, skills[4].id],
-  [people[3].id, skills[1].id],
-  [people[3].id, skills[4].id],
-  [people[4].id, skills[2].id],
-  [people[4].id, skills[3].id],
+  [people[0].id, skills[0].id, 'strong'],
+  [people[0].id, skills[1].id, 'weak'],
+  [people[0].id, skills[2].id, 'weak'],
+  [people[0].id, skills[3].id, 'strong'],
+  [people[0].id, skills[4].id, 'strong'],
+  [people[1].id, skills[2].id, 'strong'],
+  [people[2].id, skills[0].id, 'weak'],
+  [people[2].id, skills[3].id, 'strong'],
+  [people[2].id, skills[4].id, 'weak'],
+  [people[3].id, skills[1].id, 'strong'],
+  [people[3].id, skills[4].id, 'weak'],
+  [people[4].id, skills[2].id, 'strong'],
+  [people[4].id, skills[3].id, 'strong'],
 ];
 
 export const userLivesIn = [
@@ -161,7 +180,7 @@ export default async () => {
       `
       UNWIND $userSkills as userSkill
       MATCH (u:Person {id: userSkill[0]}), (s:Skill {id: userSkill[1]})
-      CREATE (u)-[:HAS_SKILL]->(s)
+      CREATE (u)-[:HAS_SKILL {strength: userSkill[2]}]->(s)
       `,
       {
         userSkills,

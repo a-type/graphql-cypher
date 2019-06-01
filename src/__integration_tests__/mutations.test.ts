@@ -64,11 +64,11 @@ describe('write mutations', () => {
     } = data;
     expect(id).toBeDefined();
     expect(rest).toMatchInlineSnapshot(`
-            Object {
-              "age": 43,
-              "firstName": "Bob",
-            }
-        `);
+                  Object {
+                    "age": 43,
+                    "firstName": "Bob",
+                  }
+            `);
   });
 
   test('can update a node and return connected nodes', async () => {
@@ -110,12 +110,24 @@ describe('write mutations', () => {
           "lastName": "Gruber",
           "skills": Array [
             Object {
-              "id": "c0b52e9a-e762-4148-a407-db425476a0c2",
-              "name": "parsing",
+              "id": "b939950a-c014-4e2f-91b0-60c6c79fc0a0",
+              "name": "devops",
+            },
+            Object {
+              "id": "1c161eab-5ba0-45b0-b9f9-a4786262a7ea",
+              "name": "typescript",
+            },
+            Object {
+              "id": "2fc8e1d2-bad5-4ed7-8df3-3501a452b2f2",
+              "name": "graph databases",
+            },
+            Object {
+              "id": "8c0b52e9-ae76-4214-8e40-7db425476a0c",
+              "name": "graphql",
             },
             Object {
               "id": "d5313797-8d6b-4fa6-bcfd-4574a83b056c",
-              "name": "connecting",
+              "name": "react",
             },
           ],
         },

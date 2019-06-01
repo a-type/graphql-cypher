@@ -9,10 +9,22 @@ export default `
     lastName: String!
     age: Int!
 
-    skills: [Skill!]! @cypherNode(relationship: "HAS_SKILL", direction: OUT)
+    skills(strength: String = "any", category: String = "any"): [Skill!]!
+      @cypherNode(
+        relationship: "HAS_SKILL",
+        direction: OUT,
+        where: """
+          ($args.strength = 'any' OR relationship.strength = $args.strength) AND
+          ($args.category = 'any' OR node.category = $args.category)
+        """
+      )
     livesIn: Country! @cypherNode(relationship: "LIVES_IN", direction: OUT)
-    friendships: [UserFriendship!]!
-      @cypherRelationship(type: "FRIEND_OF", direction: OUT)
+    friendships(type: String = "any"): [UserFriendship!]!
+      @cypherRelationship(
+        type: "FRIEND_OF",
+        direction: OUT,
+        where: "$args.type = 'any' OR relationship.type = $args.type"
+      )
 
     jobApplications: [JobApplication!]! @cypherSkip
   }

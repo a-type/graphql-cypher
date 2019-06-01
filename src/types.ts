@@ -47,6 +47,7 @@ export type NodeCypherQuery = BaseCypherQuery & {
   relationship: string;
   direction: RelationshipDirection;
   label: string;
+  where?: string;
 };
 
 export type RelationshipCypherQuery = BaseCypherQuery & {
@@ -54,6 +55,7 @@ export type RelationshipCypherQuery = BaseCypherQuery & {
   relationshipType: string;
   direction: RelationshipDirection;
   nodeLabel: string;
+  where?: string;
 };
 
 export type CypherQuery =
@@ -113,6 +115,7 @@ export type CypherNodeDirectiveArgs = {
   relationship: string;
   direction: RelationshipDirection;
   label?: string;
+  where?: string;
 };
 
 export type CypherRelationshipDirectiveArgs = {
@@ -120,6 +123,7 @@ export type CypherRelationshipDirectiveArgs = {
   relationshipType: string;
   direction: RelationshipDirection;
   nodeLabel?: string;
+  where?: string;
 };
 
 export type CypherCustomDirectiveArgs = {

@@ -62,14 +62,14 @@ describe('read queries', () => {
 
     expect(errors).toBeUndefined();
     expect(data).toMatchInlineSnapshot(`
-                                                            Object {
-                                                              "person": Object {
-                                                                "age": 52,
-                                                                "firstName": "Hans",
-                                                                "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
-                                                              },
-                                                            }
-                                        `);
+                                                                              Object {
+                                                                                "person": Object {
+                                                                                  "age": 52,
+                                                                                  "firstName": "Hans",
+                                                                                  "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
+                                                                                },
+                                                                              }
+                                                    `);
   });
 
   test('a list in-graph query', async () => {
@@ -94,36 +94,36 @@ describe('read queries', () => {
 
     expect(errors).toBeUndefined();
     expect(data).toMatchInlineSnapshot(`
-                                          Object {
-                                            "people": Array [
-                                              Object {
-                                                "age": 52,
-                                                "firstName": "Hans",
-                                                "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
-                                              },
-                                              Object {
-                                                "age": 25,
-                                                "firstName": "Chaim",
-                                                "id": "a5b5cf90-f791-4db7-bd9b-1f933451f548",
-                                              },
-                                              Object {
-                                                "age": 69,
-                                                "firstName": "Cynthia",
-                                                "id": "5bb0662c-51ab-4ff1-8b29-d8ec2c81117c",
-                                              },
-                                              Object {
-                                                "age": 63,
-                                                "firstName": "Jovan",
-                                                "id": "6faf1283-135f-415a-bde6-551f77dfcc06",
-                                              },
-                                              Object {
-                                                "age": 47,
-                                                "firstName": "Jared",
-                                                "id": "c448cd7e-4752-49fa-9b19-210423fde28a",
-                                              },
-                                            ],
-                                          }
-                            `);
+                                                            Object {
+                                                              "people": Array [
+                                                                Object {
+                                                                  "age": 52,
+                                                                  "firstName": "Hans",
+                                                                  "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
+                                                                },
+                                                                Object {
+                                                                  "age": 25,
+                                                                  "firstName": "Chaim",
+                                                                  "id": "a5b5cf90-f791-4db7-bd9b-1f933451f548",
+                                                                },
+                                                                Object {
+                                                                  "age": 69,
+                                                                  "firstName": "Cynthia",
+                                                                  "id": "5bb0662c-51ab-4ff1-8b29-d8ec2c81117c",
+                                                                },
+                                                                Object {
+                                                                  "age": 63,
+                                                                  "firstName": "Jovan",
+                                                                  "id": "6faf1283-135f-415a-bde6-551f77dfcc06",
+                                                                },
+                                                                Object {
+                                                                  "age": 47,
+                                                                  "firstName": "Jared",
+                                                                  "id": "c448cd7e-4752-49fa-9b19-210423fde28a",
+                                                                },
+                                                              ],
+                                                            }
+                                        `);
   });
 
   test('a nested list in-graph query', async () => {
@@ -154,23 +154,82 @@ describe('read queries', () => {
 
     expect(errors).toBeUndefined();
     expect(data).toMatchInlineSnapshot(`
-                                                Object {
-                                                  "person": Object {
-                                                    "firstName": "Hans",
-                                                    "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
-                                                    "skills": Array [
-                                                      Object {
-                                                        "id": "c0b52e9a-e762-4148-a407-db425476a0c2",
-                                                        "name": "parsing",
-                                                      },
-                                                      Object {
-                                                        "id": "d5313797-8d6b-4fa6-bcfd-4574a83b056c",
-                                                        "name": "connecting",
-                                                      },
-                                                    ],
-                                                  },
-                                                }
-                                `);
+            Object {
+              "person": Object {
+                "firstName": "Hans",
+                "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
+                "skills": Array [
+                  Object {
+                    "id": "b939950a-c014-4e2f-91b0-60c6c79fc0a0",
+                    "name": "devops",
+                  },
+                  Object {
+                    "id": "1c161eab-5ba0-45b0-b9f9-a4786262a7ea",
+                    "name": "typescript",
+                  },
+                  Object {
+                    "id": "2fc8e1d2-bad5-4ed7-8df3-3501a452b2f2",
+                    "name": "graph databases",
+                  },
+                  Object {
+                    "id": "8c0b52e9-ae76-4214-8e40-7db425476a0c",
+                    "name": "graphql",
+                  },
+                  Object {
+                    "id": "d5313797-8d6b-4fa6-bcfd-4574a83b056c",
+                    "name": "react",
+                  },
+                ],
+              },
+            }
+        `);
+  });
+
+  test('a filtered nested list in-graph query', async () => {
+    const personId = people[0].id;
+    const query = `
+      query NestedQuery($id: ID!) {
+        person(id: $id) {
+          id
+          firstName
+          skills(strength: "strong", category: "frontend") {
+            id
+            name
+          }
+        }
+      }
+    `;
+
+    const { data, errors } = await graphql({
+      schema,
+      source: query,
+      variableValues: {
+        id: personId,
+      },
+      contextValue: {
+        neo4jDriver: driver,
+      },
+    });
+
+    expect(errors).toBeUndefined();
+    expect(data).toMatchInlineSnapshot(`
+            Object {
+              "person": Object {
+                "firstName": "Hans",
+                "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
+                "skills": Array [
+                  Object {
+                    "id": "1c161eab-5ba0-45b0-b9f9-a4786262a7ea",
+                    "name": "typescript",
+                  },
+                  Object {
+                    "id": "d5313797-8d6b-4fa6-bcfd-4574a83b056c",
+                    "name": "react",
+                  },
+                ],
+              },
+            }
+        `);
   });
 
   test('a query that includes non-graph fields', async () => {
@@ -200,21 +259,21 @@ describe('read queries', () => {
 
     expect(errors).toBeUndefined();
     expect(data).toMatchInlineSnapshot(`
-                                    Object {
-                                      "person": Object {
-                                        "firstName": "Hans",
-                                        "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
-                                        "jobApplications": Array [
-                                          Object {
-                                            "id": "application1",
-                                          },
-                                          Object {
-                                            "id": "application2",
-                                          },
-                                        ],
-                                      },
-                                    }
-                        `);
+                                                      Object {
+                                                        "person": Object {
+                                                          "firstName": "Hans",
+                                                          "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
+                                                          "jobApplications": Array [
+                                                            Object {
+                                                              "id": "application1",
+                                                            },
+                                                            Object {
+                                                              "id": "application2",
+                                                            },
+                                                          ],
+                                                        },
+                                                      }
+                                    `);
   });
 
   test('a query with mutiple cypher queries between skipped layers', async () => {
@@ -248,29 +307,29 @@ describe('read queries', () => {
 
     expect(errors).toBeUndefined();
     expect(data).toMatchInlineSnapshot(`
-                              Object {
-                                "person": Object {
-                                  "firstName": "Hans",
-                                  "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
-                                  "jobApplications": Array [
-                                    Object {
-                                      "company": Object {
-                                        "id": "0b786331-542d-406f-93ca-a1fdd15cb6b2",
-                                        "name": "Reichert - Abshire",
-                                      },
-                                      "id": "application1",
-                                    },
-                                    Object {
-                                      "company": Object {
-                                        "id": "4e9a1ee6-8b8e-4f70-a412-bfab64b1a3c5",
-                                        "name": "Steuber - Keebler",
-                                      },
-                                      "id": "application2",
-                                    },
-                                  ],
-                                },
-                              }
-                    `);
+            Object {
+              "person": Object {
+                "firstName": "Hans",
+                "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
+                "jobApplications": Array [
+                  Object {
+                    "company": Object {
+                      "id": "f5fdb0b7-8633-4154-ad06-f13caa1fdd15",
+                      "name": "Powlowski, Jacobson and Powlowski",
+                    },
+                    "id": "application1",
+                  },
+                  Object {
+                    "company": Object {
+                      "id": "23474e9a-1ee6-48b8-af70-a412bfab64b1",
+                      "name": "DuBuque - Russel",
+                    },
+                    "id": "application2",
+                  },
+                ],
+              },
+            }
+        `);
   });
 
   test('a query with multiple cypher root fields', async () => {
@@ -305,17 +364,17 @@ describe('read queries', () => {
 
     expect(errors).toBeUndefined();
     expect(data).toMatchInlineSnapshot(`
-                        Object {
-                          "company": Object {
-                            "id": "0b786331-542d-406f-93ca-a1fdd15cb6b2",
-                            "name": "Reichert - Abshire",
-                          },
-                          "person": Object {
-                            "firstName": "Hans",
-                            "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
-                          },
-                        }
-                `);
+            Object {
+              "company": Object {
+                "id": "f5fdb0b7-8633-4154-ad06-f13caa1fdd15",
+                "name": "Powlowski, Jacobson and Powlowski",
+              },
+              "person": Object {
+                "firstName": "Hans",
+                "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
+              },
+            }
+        `);
   });
 
   describe('a query with an authorized field', () => {
@@ -350,17 +409,17 @@ describe('read queries', () => {
 
       expect(errors).toBeUndefined();
       expect(data).toMatchInlineSnapshot(`
-                        Object {
-                          "person": Object {
-                            "firstName": "Hans",
-                            "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
-                            "livesIn": Object {
-                              "id": "ca5750a6-1df3-4e21-8321-a41ee3b9df98",
-                              "name": "Bahrain",
-                            },
-                          },
-                        }
-                  `);
+                Object {
+                  "person": Object {
+                    "firstName": "Hans",
+                    "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
+                    "livesIn": Object {
+                      "id": "54045ca5-750a-461d-b3e2-18321a41ee3b",
+                      "name": "Nepal",
+                    },
+                  },
+                }
+            `);
     });
 
     it("doesn't work when unauthorized", async () => {
@@ -396,10 +455,10 @@ describe('read queries', () => {
         `[GraphQLError: You aren't authorized to view that!]`
       );
       expect(data).toMatchInlineSnapshot(`
-                        Object {
-                          "person": null,
-                        }
-                  `);
+                                                Object {
+                                                  "person": null,
+                                                }
+                                    `);
     });
   });
 
@@ -435,17 +494,67 @@ describe('read queries', () => {
 
     expect(errors).toBeUndefined();
     expect(data).toMatchInlineSnapshot(`
+                        Object {
+                          "person": Object {
+                            "firstName": "Hans",
+                            "friendships": Array [
+                              Object {
+                                "person": Object {
+                                  "firstName": "Chaim",
+                                  "id": "a5b5cf90-f791-4db7-bd9b-1f933451f548",
+                                },
+                                "type": "acquaintance",
+                              },
+                              Object {
+                                "person": Object {
+                                  "firstName": "Cynthia",
+                                  "id": "5bb0662c-51ab-4ff1-8b29-d8ec2c81117c",
+                                },
+                                "type": "best",
+                              },
+                            ],
+                            "id": "e32ae442-f5cc-4b4e-b440-e385d5e15d57",
+                          },
+                        }
+                `);
+  });
+
+  it('allows querying relation fields with filters', async () => {
+    const personId = people[0].id;
+
+    const query = `
+      query RelationQuery($personId: ID!) {
+        person(id: $personId) {
+          id
+          firstName
+          friendships(type: "best") {
+            type
+            person {
+              id
+              firstName
+            }
+          }
+        }
+      }
+    `;
+
+    const { data, errors } = await graphql({
+      schema,
+      source: query,
+      variableValues: {
+        personId,
+      },
+      contextValue: {
+        neo4jDriver: driver,
+      },
+    });
+
+    expect(errors).toBeUndefined();
+    expect(data).toMatchInlineSnapshot(`
       Object {
         "person": Object {
           "firstName": "Hans",
           "friendships": Array [
-            Object {
-              "person": Object {
-                "firstName": "Chaim",
-                "id": "a5b5cf90-f791-4db7-bd9b-1f933451f548",
-              },
-              "type": "acquaintance",
-            },
             Object {
               "person": Object {
                 "firstName": "Cynthia",
