@@ -28,6 +28,10 @@ type UserSettings {
     )
 }
 
+type PostsContainer @cypherVirtual {
+  posts: [Post!]! @cypherNode(relationship: "HAS_POST", direction: OUT, where: "node.title =~ $virtual.titleMatch")
+}
+
 type User {
   id: ID!
   name: String!
@@ -61,6 +65,8 @@ type User {
         """
       }
     ])
+
+  postsConnection(titleMatch: String): PostsContainer!
 
   settings: UserSettings! @cypherSkip
 }

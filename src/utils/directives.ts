@@ -1,4 +1,9 @@
-import { GraphQLObjectType, ArgumentNode, DirectiveNode } from 'graphql';
+import {
+  GraphQLObjectType,
+  ArgumentNode,
+  DirectiveNode,
+  isNamedType,
+} from 'graphql';
 import {
   CypherConditionalStatement,
   DirectiveNames,
@@ -6,7 +11,7 @@ import {
   RelationshipDirection,
 } from '../types';
 import uuid from 'uuid';
-import { valueNodeToValue } from './graphql';
+import { valueNodeToValue, extractObjectType } from './graphql';
 import { path } from 'ramda';
 
 const getNamedArg = (
@@ -141,7 +146,7 @@ export const getMatchingConditionalCypher = (
   );
 };
 
-export const getNamedDirective = ({
+export const getNamedFieldDirective = ({
   schemaType,
   fieldName,
   directiveName,
@@ -156,6 +161,31 @@ export const getNamedDirective = ({
   }
 
   return field.astNode.directives.find(dir => dir.name.value === directiveName);
+};
+
+export const getNamedReturnTypeDirective = ({
+  schemaType,
+  fieldName,
+  directiveName,
+}: {
+  schemaType: GraphQLObjectType;
+  fieldName: string;
+  directiveName: string;
+}) => {
+  const field = schemaType.getFields()[fieldName];
+  if (!field || !field.type) {
+    return null;
+  }
+
+  const objectType = extractObjectType(field.type);
+
+  if (!objectType || !objectType.astNode || !objectType.astNode.directives) {
+    return null;
+  }
+
+  return objectType.astNode.directives.find(
+    dir => dir.name.value === directiveName
+  );
 };
 
 const isRelationshipDirection = (str: string): str is RelationshipDirection =>
@@ -179,12 +209,26 @@ export const getCypherDirective = ({
     directiveNames.cypherCustom,
   ]
     .map(directiveName =>
-      getNamedDirective({ schemaType, fieldName, directiveName })
+      getNamedFieldDirective({ schemaType, fieldName, directiveName })
     )
     .filter(Boolean) as DirectiveNode[];
 
   if (directives.length === 0) {
-    return null;
+    // check for a 'virtual' directive on the return type of the field, if so
+    // it's a virtual field.
+    const virtualDirective = getNamedReturnTypeDirective({
+      schemaType,
+      fieldName,
+      directiveName: directiveNames.cypherVirtual,
+    });
+
+    if (virtualDirective) {
+      return {
+        kind: 'CypherVirtualDirective',
+      };
+    } else {
+      return null;
+    }
   } else if (directives.length > 1) {
     throw new Error(
       `Multiple Cypher directives are not allowed on the same field (type "${
@@ -348,7 +392,7 @@ export const findCypherNodesDirectiveOnType = ({
   const nodeDirectives = Object.keys(fields)
     .map(fieldName => ({
       fieldName,
-      directive: getNamedDirective({
+      directive: getNamedFieldDirective({
         schemaType,
         fieldName,
         directiveName: directiveNames.cypherNode,

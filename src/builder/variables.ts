@@ -16,6 +16,7 @@ const buildPrefixedFieldArgVariables = ({
   [`${FIELD_PARAM_PREFIX}${fieldName}`]: {
     args: query.params.args,
     generated: query.params.generated,
+    virtual: query.params.virtual,
   },
   ...query.fields
     .filter(childFieldName => !!query.fieldQueries[childFieldName])

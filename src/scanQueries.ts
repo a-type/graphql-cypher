@@ -114,6 +114,13 @@ const extractQueriesFromField = ({
         paramNames.push('generated');
         params.generated = generatedArgs;
       }
+      if (activeQuery && activeQuery.kind === 'VirtualCypherQuery') {
+        paramNames.push('virtual');
+        params.virtual = {
+          ...activeQuery.params.args,
+          ...activeQuery.params.virtual,
+        };
+      }
 
       const baseQueryProperties = {
         returnsList: isListOrWrappedListType(schemaFieldDef.type),
@@ -153,7 +160,7 @@ const extractQueriesFromField = ({
           label,
           kind: 'NodeCypherQuery',
         };
-      } else {
+      } else if (cypherDirective.kind === 'CypherRelationshipDirective') {
         if (cypherDirective.nodeLabel) {
           currentQuery = {
             ...baseQueryProperties,
@@ -211,6 +218,11 @@ const extractQueriesFromField = ({
             kind: 'RelationshipCypherQuery',
           };
         }
+      } else {
+        currentQuery = {
+          ...baseQueryProperties,
+          kind: 'VirtualCypherQuery',
+        };
       }
 
       if (!currentQuery) {

@@ -4,6 +4,7 @@ import {
   NodeCypherQuery,
   RelationshipCypherQuery,
   CustomCypherQuery,
+  VirtualCypherQuery,
 } from '../types';
 import {
   buildNode,
@@ -132,6 +133,31 @@ const buildNodeField = ({
   ].join('');
 };
 
+const buildVirtualField = ({
+  fieldName,
+  query,
+  namespace,
+  parentName,
+}: {
+  fieldName: string;
+  query: VirtualCypherQuery;
+  namespace: string;
+  parentName: string;
+}) => {
+  return [
+    `${fieldName}: `,
+    buildFields({
+      // parentName is transparently copied through
+      parentName,
+      query,
+      parentWasRelationship: false,
+      // namespace is updated, since the virtual query will still
+      // affect the overall query structure
+      namespace: `${namespace}_${fieldName}`,
+    }),
+  ].join('');
+};
+
 /**
  * Formats params for an apoc subquery statement:
  * bar: $bar, baz: $baz, parent: parentVar
@@ -243,7 +269,9 @@ const buildFields = ({
         }
 
         if (fieldQuery.kind === 'BuilderCypherQuery') {
-          throw new Error('Nesting Cypher builder fields is TODO');
+          throw new Error(
+            'Nesting Cypher builder fields is not currently possible'
+          );
         } else if (fieldQuery.kind === 'NodeCypherQuery') {
           return buildNodeField({
             fieldName,
@@ -265,6 +293,13 @@ const buildFields = ({
             parentName,
             query: fieldQuery,
             namespace,
+          });
+        } else if (fieldQuery.kind === 'VirtualCypherQuery') {
+          return buildVirtualField({
+            fieldName,
+            query: fieldQuery,
+            namespace,
+            parentName,
           });
         }
       })

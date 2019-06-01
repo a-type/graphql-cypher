@@ -94,4 +94,5 @@ directive @${directiveNames.cypherRelationship}(
 directive @${directiveNames.generateId}(
   argName: String
 ) on FIELD_DEFINITION
+directive @${directiveNames.cypherVirtual} on OBJECT
 `;

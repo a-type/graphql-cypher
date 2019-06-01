@@ -25,8 +25,18 @@ export default `
         direction: OUT,
         where: "$args.type = 'any' OR relationship.type = $args.type"
       )
+    friendshipsConnection(type: String = "any"): FriendshipsConnection!
 
     jobApplications: [JobApplication!]! @cypherSkip
+  }
+
+  type FriendshipsConnection @cypherVirtual {
+    edges: [UserFriendship!]!
+      @cypherRelationship(
+        type: "FRIEND_OF",
+        direction: OUT,
+        where: "$virtual.type = 'any' OR relationship.type = $virtual.type"
+      )
   }
 
   type UserFriendship {

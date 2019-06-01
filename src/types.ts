@@ -7,6 +7,9 @@ export type CustomCypherParams = {
   generated?: {
     [name: string]: any;
   };
+  virtual?: {
+    [name: string]: any;
+  };
 };
 
 export type BaseCypherQuery = {
@@ -58,11 +61,17 @@ export type RelationshipCypherQuery = BaseCypherQuery & {
   where?: string;
 };
 
+/** Virtual fragments create 'gaps' in the structure of the data without querying anything */
+export type VirtualCypherQuery = BaseCypherQuery & {
+  kind: 'VirtualCypherQuery';
+};
+
 export type CypherQuery =
   | CustomCypherQuery
   | BuilderCypherQuery
   | NodeCypherQuery
-  | RelationshipCypherQuery;
+  | RelationshipCypherQuery
+  | VirtualCypherQuery;
 
 export type CypherConditionalStatement = {
   statement: string;
@@ -92,6 +101,7 @@ export type DirectiveNames = {
   cypherCustom: string;
   cypherSkip: string;
   generateId: string;
+  cypherVirtual: string;
 };
 
 export type CypherBuilderDirectiveArgs = {
@@ -131,8 +141,13 @@ export type CypherCustomDirectiveArgs = {
   cypher: string;
 };
 
+export type CypherVirtualDirectiveArgs = {
+  kind: 'CypherVirtualDirective';
+};
+
 export type CypherDirectiveArgs =
   | CypherBuilderDirectiveArgs
   | CypherNodeDirectiveArgs
   | CypherRelationshipDirectiveArgs
-  | CypherCustomDirectiveArgs;
+  | CypherCustomDirectiveArgs
+  | CypherVirtualDirectiveArgs;

@@ -7,4 +7,5 @@ export const DEFAULT_DIRECTIVE_NAMES: DirectiveNames = {
   cypher: 'cypher',
   cypherNode: 'cypherNode',
   cypherRelationship: 'cypherRelationship',
+  cypherVirtual: 'cypherVirtual',
 };

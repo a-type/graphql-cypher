@@ -139,7 +139,7 @@ export const buildMultiValueYieldMapper = ({
  */
 export const createParamNamespacer = (
   namespace: string,
-  paramNames: string[] = ['args', 'generated']
+  paramNames: string[] = ['args', 'generated', 'virtual']
 ) => (phrase?: string) =>
   phrase &&
   paramNames.reduce(
