@@ -1,49 +1,12 @@
-import { SchemaDirectiveVisitor } from 'graphql-tools';
-import {
-  GraphQLField,
-  GraphQLResolveInfo,
-  defaultFieldResolver,
-} from 'graphql';
-import { AugmentedContext, DirectiveNames } from './types';
+import { DirectiveNames } from './types';
 import { DEFAULT_DIRECTIVE_NAMES } from './constants';
 
 /**
- * The @cypher directive doesn't do a lot of work internally, but it does define a new default resolver
- * for fields that use it. The real magic of @cypher happens when the middleware reads the arguments
- * to the directives directly from the schema before execution.
+ * If your GraphQL server requires explicit type definitions for all
+ * directives, you can use this function to create some. Pass an argument with
+ * customized names for the directives if you have changed them, or call it
+ * without arguments to generate default type definitions.
  */
-export class BaseCypherDirective extends SchemaDirectiveVisitor {
-  visitFieldDefinition(field: GraphQLField<any, any>) {
-    const { resolve } = field;
-    if (!resolve) {
-      field.resolve = async (
-        parent: any,
-        args: any,
-        ctx: AugmentedContext,
-        info: GraphQLResolveInfo
-      ) => {
-        if (ctx.runCypher) {
-          const data = await ctx.runCypher();
-          return data;
-        }
-        return defaultFieldResolver(parent, args, ctx, info);
-      };
-    }
-  }
-}
-
-export class CypherCustomDirective extends BaseCypherDirective {}
-export class CypherDirective extends BaseCypherDirective {}
-export class CypherNodeDirective extends BaseCypherDirective {}
-export class CypherRelationshipDirective extends BaseCypherDirective {}
-
-export const directives = {
-  cypherCustom: CypherCustomDirective,
-  cypher: CypherDirective,
-  cypherNode: CypherNodeDirective,
-  cypherRelationship: CypherRelationshipDirective,
-};
-
 export const directiveTypeDefs = (
   directiveNames: DirectiveNames = DEFAULT_DIRECTIVE_NAMES
 ) => `

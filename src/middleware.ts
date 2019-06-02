@@ -64,7 +64,11 @@ export const createMiddleware = (
 
   const matchingCypherQuery = context.__graphqlCypher.cypherQueries[pathString];
 
-  let runCypher: () => Promise<any>;
+  let runCypher: (
+    args: any,
+    context: any,
+    info: GraphQLResolveInfo
+  ) => Promise<any>;
 
   if (matchingCypherQuery) {
     runCypher = async () => {
@@ -126,12 +130,25 @@ export const createMiddleware = (
       }
     };
   } else {
-    runCypher = async () => {
-      return defaultFieldResolver(parent, args, context, info);
+    runCypher = async (providedArgs, providedContext, providedInfo) => {
+      return defaultFieldResolver(
+        parent,
+        providedArgs || args,
+        providedContext || context,
+        providedInfo || info
+      );
     };
   }
 
-  const result = await resolve(parent, args, { ...context, runCypher }, info);
+  const result = await resolve(
+    {
+      ...parent,
+      [info.fieldName]: runCypher,
+    },
+    args,
+    context,
+    info
+  );
   return result;
 };
 

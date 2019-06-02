@@ -41,7 +41,7 @@ export default {
       }
 
       // if the user passed our check, we can delegate to graphql-cypher for the data
-      return ctx.runCypher();
+      return parent.livesIn();
     },
   },
   Query: {

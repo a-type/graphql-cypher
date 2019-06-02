@@ -5,7 +5,6 @@ import { makeExecutableSchema } from 'graphql-tools';
 import { applyMiddleware } from 'graphql-middleware';
 import neo4jDriver from './mocks/neo4jDriver';
 import neo4jRecordSet from './mocks/neo4jRecordSet';
-import { directives } from '../directives';
 
 describe('the middleware', () => {
   test('works', async () => {
@@ -13,7 +12,6 @@ describe('the middleware', () => {
       makeExecutableSchema({
         typeDefs,
         resolvers: {},
-        schemaDirectives: directives,
       }),
       middleware
     );
@@ -168,12 +166,11 @@ describe('the middleware', () => {
                 return null;
               }
 
-              const data = await ctx.runCypher();
+              const data = await parent.user(args, ctx, info);
               return data;
             },
           },
         },
-        schemaDirectives: directives,
       }),
       middleware
     );

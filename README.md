@@ -63,9 +63,9 @@ const resolvers = {
         return null;
       }
 
-      // this function is added to context for you so that you can
-      // customize how you invoke your cypher operation
-      return ctx.runCypher();
+      // the field on the parent will be passed as a function you can choose
+      // to call, or omit
+      return parent.secret();
     },
   },
 };
@@ -115,22 +115,6 @@ import schema from './my-schema';
 const schemaWithMiddleware = applyMiddleware(schema, cypherMiddleware);
 ```
 
-With the middleware installed, you'll now need to add this library's custom directives. You may need to check documentation for your GraphQL library on how to do this. An example is provided below with the widely-used `graphql-tools` `makeExecutableSchema`.
-
-**Using makeExecutableSchema**
-
-```ts
-import { directives } from 'graphql-cypher';
-import { makeExecutableSchema } from 'graphql-tools';
-
-const schema = makeExecutableSchema({
-  typeDefs,
-  resolvers,
-  // if you rename directives, you must assign them manually to your custom names.
-  schemaDirectives: directives,
-});
-```
-
 Now you're ready to begin adding directives to your schema. Find a field you want to resolve with Cypher and create your directive.
 
 ```graphql
@@ -151,10 +135,13 @@ type Query {
 >     cypherSkip: 'myCypherSkip',
 >     cypherCustom: 'myCypherCustom',
 >     cypherNode: 'myCypherNode',
->     cypherRelationship: 'myCypherRelationship'
+>     cypherRelationship: 'myCypherRelationship',
+>     generateId: 'myGenerateId',
 >   }
 > });
 > ```
+
+> **Providing directive typeDefs**: Some GraphQL implementations want you to specify typeDefs for all your directives. You can do that by importing `directiveTypeDefs` from `graphql-cypher`. It's a function. Call it with no arguments, and it will generate the default typeDefs, which you can then add to your schema string. Or, pass in custom directive names if you have changed those, and it will use the names you provide (see **Renaming the directives** above for the names).
 
 You don't need to add a resolver. Make a query against your schema and see what happens!
 
@@ -393,27 +380,35 @@ We've already seen the `$args` parameter, which is available to our all our Cyph
 
 You can add your own custom resolver logic into the Cypher execution flow to control user access to data or call out to external services before returning the result.
 
-Simply add your own resolver to a Cypher-powered field, and then be sure to call `await context.runCypher()` to retrieve the field's data from your graph database when you're ready for it.
+Simply add your own resolver to a Cypher-powered field, and then be sure to call `await parent.myFieldName()` (where "myFieldName" is the name of the field you're resolving) to retrieve the field's data from your graph database when you're ready for it.
 
 #### Example: Authorization
 
 ```ts
-const authorizedResolver = (parent, args, context) => {
-  if (!context.isAdmin) {
-    return null;
-  }
+const resolvers = {
+  Query: {
+    adminData: (parent, args, context) => {
+      if (!context.isAdmin) {
+        return null;
+      }
 
-  return context.runCypher();
+      return parent.adminData();
+    },
+  },
 };
 ```
 
 ### Example: External Service
 
 ```ts
-const notifyingResolver = async (parent, args, context) => {
-  const data = await context.runCypher();
-  context.notifier.record('The user fetched the data');
-  return data;
+const resolvers = {
+  Query: {
+    monitoredData: async (parent, args, context) => {
+      const data = await parent.monitoredData();
+      context.notifier.record('The user fetched the data');
+      return data;
+    },
+  },
 };
 ```
 
@@ -442,7 +437,7 @@ type Mutation {
 ## Limitations
 
 - `@cypherCustom` directives rely on the popular APOC library for Neo4j. Chances are if you're running Neo4j, you already have it installed.
-- Using `context.runCypher` to selectively fetch data only prevents the data from being queried if the field is the root field in your operation or the direct descendant of a non-Cypher-powered field. Otherwise, the data will still be fetched, but by omitting `runCypher` you will just not return it.
+- Using `parent.myField()` to selectively fetch data only prevents the data from being queried if the field is the root field in your operation or the direct descendant of a non-Cypher-powered field. Otherwise, the data will still be fetched, but by omitting the call to `parent.myField()` you will just not return it.
   - This could probably be changed, but not within the current middleware model. A new traversal to just resolve the Cypher queries before the main resolvers are called would probably need to be introduced.
 - `@cypherCustom` custom queries are not going to be as performant as `@cypher` and the other directives, because they run Cypher fragments in user functions, which basically means they get an entirely separate query planning phase. I haven't really profiled it much, but I see a pretty significant performance increase by sticking with the standard directives whenever possible.
 
