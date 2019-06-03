@@ -62,6 +62,7 @@ export const buildBindable = ({
   binding,
   label,
   properties,
+  extra,
 }: {
   openChar: string;
   closeChar: string;
@@ -70,6 +71,7 @@ export const buildBindable = ({
   properties?: {
     [key: string]: string | number | boolean;
   };
+  extra?: string;
 }) => {
   const propertiesString =
     properties &&
@@ -78,7 +80,7 @@ export const buildBindable = ({
       .join(', ');
   return `${openChar}${binding || ''}${label ? `:${label}` : ''}${
     propertiesString ? `{${propertiesString}}` : ''
-  }${closeChar}`;
+  }${extra ? extra : ''}${closeChar}`;
 };
 
 export const buildNode = ({
@@ -97,18 +99,31 @@ export const buildRelationship = ({
   label,
   properties,
   direction,
+  variableLength,
+  sliceStart = null,
+  sliceEnd = null,
 }: {
   binding?: string;
   label?: string;
   properties?: { [key: string]: string | number | boolean };
   direction: RelationshipDirection;
+  variableLength?: boolean;
+  sliceStart?: number | null;
+  sliceEnd?: number | null;
 }) => {
+  const variableLengthSection = variableLength
+    ? `*${sliceStart !== null ? sliceStart : ''}${
+        sliceStart !== null || sliceEnd !== null ? '..' : ''
+      }${sliceEnd !== null ? sliceEnd : ''}`
+    : '';
+
   const body = buildBindable({
     binding,
     label,
     properties,
     openChar: '[',
     closeChar: ']',
+    extra: variableLengthSection,
   });
 
   if (direction === 'IN') {

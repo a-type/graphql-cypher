@@ -223,6 +223,7 @@ export const getCypherDirective = ({
     directiveNames.cypherNode,
     directiveNames.cypherRelationship,
     directiveNames.cypherCustom,
+    directiveNames.cypherLinkedNodes,
   ]
     .map(directiveName =>
       getNamedFieldDirective({ schemaType, fieldName, directiveName })
@@ -277,7 +278,9 @@ export const getCypherDirective = ({
 
     if (!statementsArg) {
       throw new Error(
-        `@cypher directive on '${fieldName}' must specify either 'statement' or 'statements' argument`
+        `@${
+          directiveNames.cypherCustom
+        } directive on '${fieldName}' must specify either 'statement' or 'statements' argument`
       );
     }
 
@@ -329,9 +332,9 @@ export const getCypherDirective = ({
 
     if (!ret) {
       throw new Error(
-        `\`return\` argument is required on a Cypher builder directive (type: "${
-          schemaType.name
-        }", field: "${fieldName}")`
+        `\`return\` argument is required on a @${
+          directiveNames.cypher
+        } directive (type: "${schemaType.name}", field: "${fieldName}")`
       );
     }
 
@@ -358,7 +361,9 @@ export const getCypherDirective = ({
 
     if (!relationship || !direction || !isRelationshipDirection(direction)) {
       throw new Error(
-        `A Cypher Node directive requires \`relationship\` and \`direction\` arguments, and \`direction\` must be "IN" or "OUT" (type: "${
+        `A @${
+          directiveNames.cypherNode
+        } directive requires \`relationship\` and \`direction\` arguments, and \`direction\` must be "IN" or "OUT" (type: "${
           schemaType.name
         }", field: "${fieldName}")`
       );
@@ -383,7 +388,9 @@ export const getCypherDirective = ({
       !isRelationshipDirection(direction)
     ) {
       throw new Error(
-        `A Cypher Node directive requires \`type\` and \`direction\` arguments, and \`direction\` must be "IN" or "OUT" (type: "${
+        `A @${
+          directiveNames.cypherRelationship
+        } directive requires \`type\` and \`direction\` arguments, and \`direction\` must be "IN" or "OUT" (type: "${
           schemaType.name
         }", field: "${fieldName}")`
       );
@@ -395,6 +402,33 @@ export const getCypherDirective = ({
       direction,
       nodeLabel,
       where,
+    };
+  } else if (directive.name.value === directiveNames.cypherLinkedNodes) {
+    const relationship = extractArgumentStringValue(directive, 'relationship');
+    const direction = extractArgumentStringValue(directive, 'direction');
+    const label = extractArgumentStringValue(directive, 'label');
+    const where = extractArgumentStringValue(directive, 'where');
+    const skip = extractArgumentStringValue(directive, 'skip');
+    const limit = extractArgumentStringValue(directive, 'limit');
+
+    if (!relationship || !direction || !isRelationshipDirection(direction)) {
+      throw new Error(
+        `A @${
+          directiveNames.cypherLinkedNodes
+        } directive requires \`relationship\` and \`direction\` arguments, and \`direction\` must be "IN" or "OUT" (type: "${
+          schemaType.name
+        }", field: "${fieldName}")`
+      );
+    }
+
+    return {
+      kind: 'CypherLinkedNodesDirective',
+      relationship,
+      direction,
+      label,
+      where,
+      skip,
+      limit,
     };
   }
 

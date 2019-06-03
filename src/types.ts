@@ -67,12 +67,23 @@ export type VirtualCypherQuery = BaseCypherQuery & {
   kind: 'VirtualCypherQuery';
 };
 
+export type LinkedNodesCypherQuery = BaseCypherQuery & {
+  kind: 'LinkedNodesCypherQuery';
+  relationship: string;
+  direction: RelationshipDirection;
+  label: string;
+  skip?: string;
+  limit?: string;
+  where?: string;
+};
+
 export type CypherQuery =
   | CustomCypherQuery
   | BuilderCypherQuery
   | NodeCypherQuery
   | RelationshipCypherQuery
-  | VirtualCypherQuery;
+  | VirtualCypherQuery
+  | LinkedNodesCypherQuery;
 
 export type CypherConditionalStatement = {
   statement: string;
@@ -103,6 +114,7 @@ export type DirectiveNames = {
   cypherSkip: string;
   generateId: string;
   cypherVirtual: string;
+  cypherLinkedNodes: string;
 };
 
 export type CypherBuilderDirectiveArgs = {
@@ -147,9 +159,20 @@ export type CypherVirtualDirectiveArgs = {
   kind: 'CypherVirtualDirective';
 };
 
+export type CypherLinkedNodesArgs = {
+  kind: 'CypherLinkedNodesDirective';
+  relationship: string;
+  direction?: RelationshipDirection;
+  skip?: string;
+  limit?: string;
+  label?: string;
+  where?: string;
+};
+
 export type CypherDirectiveArgs =
   | CypherBuilderDirectiveArgs
   | CypherNodeDirectiveArgs
   | CypherRelationshipDirectiveArgs
   | CypherCustomDirectiveArgs
-  | CypherVirtualDirectiveArgs;
+  | CypherVirtualDirectiveArgs
+  | CypherLinkedNodesArgs;

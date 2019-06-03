@@ -251,6 +251,31 @@ type UserFriendship {
 }
 ```
 
+##### `@cypherLinkedNodes`: Represent a linked list
+
+Linked lists are a powerful concept to utilize for a series of data points in a graph. The `@cypherLinkedNodes` directive can help traverse a linked list with support for basic pagination. It accepts the following arguments:
+
+- `relationship` (`String!`): **required** The type of the relationship between linked nodes
+- `direction` (`RelationshipDirection`): The direction of the relationship from the source node (`IN` or `OUT`). This defaults to `OUT`.
+- `label` (`String`): We need to know the label of the list nodes to make a good query, so we will try to infer it from your schema. If we can't (or if the target node label is different from your GraphQL type name), you can manually supply one here.
+- `skip` (`String`): Provide a field parameter path to `skip` to specify how many nodes you want to skip in the list (ex: `$args.input.offset`)
+- `limit` (`String`): Provide a field parameter path to `limit` to specify the maximum number of nodes you want to return in the list (ex: `$args.input.first`)
+
+**Example**
+
+```graphql
+type User {
+  posts(first: Int = 10, offset: Int = 0): [Post!]!
+    @cypherLinkedNodes(
+      relationship: "HAS_NEXT_POST"
+      skip: "$args.first"
+      limit: "$args.offset"
+    )
+}
+```
+
+> _Tip:_ If your linked list uses multiple types of relationships, you can supply a multi-type matcher to `relationship` like "`HAS_FIRST_POST|HAS_NEXT_POST`".
+
 ##### `@cypherVirtual`: Add extra layers to the structure of returned data
 
 Sometimes you may want to introduce a new, intermediate layer between two parts of your GraphQL schema while continuing to fetch all the data from a single connected query. The `@cypherVirtual` directive is a GraphQL Type directive which indicates that a particular named type is "virtual": it only exists in your GraphQL schema, and is "invisible" to your Cypher query (mostly).

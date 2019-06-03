@@ -5,6 +5,7 @@ import {
   RelationshipCypherQuery,
   CustomCypherQuery,
   VirtualCypherQuery,
+  LinkedNodesCypherQuery,
 } from '../types';
 import {
   buildNode,
@@ -29,6 +30,15 @@ import {
   buildWhere,
 } from './language';
 import { FIELD_PARAM_PREFIX } from './constants';
+
+const evaluateParamValue = <T>(query: CypherQuery, paramName: string) => {
+  const path = paramName.replace('$', '').split('.');
+  const value = path.reduce<T>(
+    (obj, prop) => (obj ? obj[prop] : null),
+    query.params as any
+  );
+  return value || null;
+};
 
 const buildRelationshipField = ({
   fieldName,
@@ -155,6 +165,71 @@ const buildVirtualField = ({
       // affect the overall query structure
       namespace: `${namespace}_${fieldName}`,
     }),
+  ].join('');
+};
+
+const buildLinkedNodesField = ({
+  fieldName,
+  query,
+  namespace,
+  parentName,
+  parentWasRelationship,
+}: {
+  fieldName: string;
+  query: LinkedNodesCypherQuery;
+  namespace: string;
+  parentName: string;
+  parentWasRelationship: boolean;
+}) => {
+  if (parentWasRelationship) {
+    throw new Error(
+      'Invalid: Linked Nodes directive cannot be used if its parent returns a relationship.'
+    );
+  }
+
+  const namespacedName = `${namespace}_${fieldName}`;
+  const namespaceParams = createParamNamespacer(namespacedName);
+  const relationshipBindingName = `${namespacedName}_relationship`;
+
+  const skip = query.skip
+    ? evaluateParamValue<number>(query, query.skip)
+    : null;
+  const limit = query.limit
+    ? evaluateParamValue<number>(query, query.limit)
+    : null;
+
+  const sliceEnd = limit !== null ? (skip || 0) + limit : null;
+
+  return [
+    `${fieldName}: `,
+    query.returnsList ? '' : 'head(',
+    '[',
+    buildNode({ binding: parentName }),
+    buildRelationship({
+      label: query.relationship,
+      direction: query.direction,
+      variableLength: true,
+      sliceStart: skip,
+      sliceEnd,
+    }),
+    buildNode({ binding: namespacedName, label: query.label }),
+    // rename 'node' placeholder to binding name
+    query.where
+      ? ' ' +
+        buildWhere(
+          namespaceParams(query.where.replace(/node/g, namespacedName))
+        )
+      : '',
+    ' | ',
+    `${namespacedName} `,
+    buildFields({
+      parentName: namespacedName,
+      query,
+      parentWasRelationship: false,
+      namespace: namespacedName,
+    }),
+    ']',
+    query.returnsList ? '' : ')',
   ].join('');
 };
 
@@ -300,6 +375,14 @@ const buildFields = ({
             query: fieldQuery,
             namespace,
             parentName,
+          });
+        } else if (fieldQuery.kind === 'LinkedNodesCypherQuery') {
+          return buildLinkedNodesField({
+            fieldName,
+            query: fieldQuery,
+            namespace,
+            parentName,
+            parentWasRelationship,
           });
         }
       })

@@ -219,6 +219,17 @@ const extractQueriesFromField = ({
             kind: 'RelationshipCypherQuery',
           };
         }
+      } else if (cypherDirective.kind === 'CypherLinkedNodesDirective') {
+        const fieldTypeName = getFieldTypeName(parentType, fieldName);
+        const label = cypherDirective.label || fieldTypeName;
+
+        currentQuery = {
+          ...baseQueryProperties,
+          ...cypherDirective,
+          kind: 'LinkedNodesCypherQuery',
+          label,
+          direction: cypherDirective.direction || 'OUT',
+        };
       } else {
         currentQuery = {
           ...baseQueryProperties,
