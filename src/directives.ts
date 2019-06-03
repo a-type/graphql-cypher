@@ -58,4 +58,12 @@ directive @${directiveNames.generateId}(
   argName: String
 ) on FIELD_DEFINITION
 directive @${directiveNames.cypherVirtual} on OBJECT
+directive @${directiveNames.cypherLinkedNodes}(
+  relationship: String!
+  direction: CypherRelationshipDirection
+  label: String
+  where: String
+  skip: String
+  limit: String
+) on FIELD_DEFINITION
 `;

@@ -189,7 +189,6 @@ const buildLinkedNodesField = ({
 
   const namespacedName = `${namespace}_${fieldName}`;
   const namespaceParams = createParamNamespacer(namespacedName);
-  const relationshipBindingName = `${namespacedName}_relationship`;
 
   const skip = query.skip
     ? evaluateParamValue<number>(query, query.skip)

@@ -256,6 +256,7 @@ type UserFriendship {
 Linked lists are a powerful concept to utilize for a series of data points in a graph. The `@cypherLinkedNodes` directive can help traverse a linked list with support for basic pagination. It accepts the following arguments:
 
 - `relationship` (`String!`): **required** The type of the relationship between linked nodes
+- `where` (`String`): Allows adding a `WHERE` clause to the pattern. This is potentially useful to introduce cursor-based pagination. The value `node` will be automatically bound to the ending node of the current linked list segment, so you can use `(node)` in your `WHERE` clause as you see fit.
 - `direction` (`RelationshipDirection`): The direction of the relationship from the source node (`IN` or `OUT`). This defaults to `OUT`.
 - `label` (`String`): We need to know the label of the list nodes to make a good query, so we will try to infer it from your schema. If we can't (or if the target node label is different from your GraphQL type name), you can manually supply one here.
 - `skip` (`String`): Provide a field parameter path to `skip` to specify how many nodes you want to skip in the list (ex: `$args.input.offset`)
@@ -270,6 +271,17 @@ type User {
       relationship: "HAS_NEXT_POST"
       skip: "$args.first"
       limit: "$args.offset"
+    )
+
+  # cursor (experimental idea)
+  # it may be possible to utilize the "node" binding in the where argument
+  # to enforce that all returned paths come after a particular node,
+  # selected by ID or some other cursor value.
+  postsWithCursor(cursor: String, count: Int = 10): [Post!]!
+    @cypherLinkedNodes(
+      relationship: "HAS_NEXT_POST"
+      limit: "$args.count"
+      where: "(:Post {id:$args.cursor})-[:HAS_NEXT_POST*]->(node)"
     )
 }
 ```
