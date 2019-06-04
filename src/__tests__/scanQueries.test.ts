@@ -7,7 +7,6 @@ import { graphql } from 'graphql';
 import { extractCypherQueriesFromOperation } from '../scanQueries';
 import { DirectiveNames } from '../types';
 import { DEFAULT_DIRECTIVE_NAMES } from '../constants';
-import { directives } from '../directives';
 
 const expectCypher = async (
   query: string,
@@ -20,7 +19,8 @@ const expectCypher = async (
       .replace(/@cypher/g, '@' + directiveNames.cypher)
       .replace(/@cypherNode/g, '@' + directiveNames.cypherNode)
       .replace(/@cypherRelationship/g, '@' + directiveNames.cypherRelationship)
-      .replace(/@cypherVirtual/g, '@' + directiveNames.cypherVirtual);
+      .replace(/@cypherVirtual/g, '@' + directiveNames.cypherVirtual)
+      .replace(/@cypherLinkedNodes/g, '@' + directiveNames.cypherLinkedNodes);
 
     const resolvers = {
       Query: {
@@ -49,7 +49,6 @@ const expectCypher = async (
     const schema = makeExecutableSchema({
       typeDefs: finalTypeDefs,
       resolvers,
-      schemaDirectives: directives,
     });
 
     const result = await graphql({
@@ -71,6 +70,7 @@ describe('scanning queries from an operation', () => {
     const query = `
       query TestQuery {
         user(id: "foo") {
+          __typename
           name
           email
         }
@@ -255,6 +255,7 @@ describe('scanning queries from an operation', () => {
       cypherNode: 'myCypherNode',
       cypherRelationship: 'myCypherRelationship',
       cypherVirtual: 'myCypherVirtual',
+      cypherLinkedNodes: 'myCypherLinkedNodes',
     });
     expect(result).toMatchInlineSnapshot(`
                               Object {

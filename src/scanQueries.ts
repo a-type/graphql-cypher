@@ -29,7 +29,7 @@ import {
 } from './utils/directives';
 import { getFieldDef } from 'graphql/execution/execute';
 import { FieldMissingError } from './errors';
-import { DEFAULT_DIRECTIVE_NAMES } from './constants';
+import { DEFAULT_DIRECTIVE_NAMES, IGNORED_FIELD_NAMES } from './constants';
 
 export type ScanQueriesConfig = {
   directiveNames: DirectiveNames;
@@ -59,6 +59,11 @@ const extractQueriesFromField = ({
   config,
 }: ExtractFromFieldParams): CypherQueryFieldMap => {
   const fieldName = field.name.value;
+
+  if (IGNORED_FIELD_NAMES.includes(fieldName)) {
+    return queries;
+  }
+
   const skip = isCypherSkip(
     parentType,
     fieldName,
