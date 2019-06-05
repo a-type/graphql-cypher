@@ -148,6 +148,50 @@ import schema from './my-schema';
 const schemaWithMiddleware = applyMiddleware(schema, cypherMiddleware);
 ```
 
+**Providing directive typeDefs**
+
+Some GraphQL implementations want you to specify typeDefs for all your directives. You can do that by importing `directiveTypeDefs` from `graphql-cypher`. It's a function. Call it with no arguments, and it will generate the default typeDefs, which you can then add to your schema string. Or, pass in custom directive names if you have changed those, and it will use the names you provide (see **Renaming the directives** below for the names).
+
+```ts
+import { gql } from 'apollo-server';
+import { makeExecutableSchema } from 'graphql-tools';
+import { directiveTypeDefs } from 'graphql-cypher';
+
+const myOtherTypeDefs = gql`
+  type Query {
+    foo: Boolean
+  }
+`;
+
+const fullTypeDefs = [
+  gql`
+    ${directiveTypeDefs()}
+  `,
+  myOtherTypeDefs,
+];
+
+const schema = makeExecutableSchema({
+  typeDefs,
+});
+```
+
+**Add your Neo4j Driver to Context**
+
+Finally, assign your Neo4j JS driver instance to a `neo4jDriver` field on your GraphQL context object for each request.
+
+```ts
+// Apollo example
+const neo4jDriver = v1.driver('bolt://localhost:7687');
+
+const apollo = new ApolloServer({
+  context: ({ req }) => ({
+    neo4jDriver,
+  }),
+});
+```
+
+> Only Neo4j is supported by the library at the moment. Adding support for other Cypher-powered databases is welcome!
+
 Now you're ready to begin adding directives to your schema. Find a field you want to resolve with Cypher and create your directive.
 
 ```graphql
@@ -156,6 +200,8 @@ type Query {
     @cypher(match: "(user:User {id: $args.id})", return: "user")
 }
 ```
+
+Try a query! If all went well (and data is present in your database to match the query), you should get your node back! No resolvers necessary!
 
 > **Renaming the directives**: if the default directive names don't work for you (for instance, if you're still using `neo4j-graphql-js` `@cypherCustom` directive for part of your schema), you can rename them. Just assign the directives to different properties in `schemaDirectives`, and then create a configured middleware by importing `createMiddleware` from `graphql-cypher` and providing a config object.
 >
@@ -173,10 +219,6 @@ type Query {
 >   }
 > });
 > ```
-
-> **Providing directive typeDefs**: Some GraphQL implementations want you to specify typeDefs for all your directives. You can do that by importing `directiveTypeDefs` from `graphql-cypher`. It's a function. Call it with no arguments, and it will generate the default typeDefs, which you can then add to your schema string. Or, pass in custom directive names if you have changed those, and it will use the names you provide (see **Renaming the directives** above for the names).
-
-You don't need to add a resolver. Make a query against your schema and see what happens!
 
 ### Queries
 
