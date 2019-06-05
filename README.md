@@ -6,7 +6,37 @@ A simple but powerful translation layer between GraphQL and Cypher.
 
 > **Note** In its current form, certain features of this library require APOC to run. See [Limitations](#limitations)
 
-### [Read the Documentation](#documentation)
+- [graphql-cypher](#graphql-cypher)
+  - [Key Features](#key-features)
+    - [🔨 Simple setup](#%F0%9F%94%A8-simple-setup)
+    - [🌎 Helpful Cypher globals](#%F0%9F%8C%8E-helpful-cypher-globals)
+    - [🔗 Multi-data-source friendly](#%F0%9F%94%97-multi-data-source-friendly)
+    - [🔑 Authorization friendly](#%F0%9F%94%91-authorization-friendly)
+  - [Goals](#goals)
+  - [Documentation](#documentation)
+    - [Setup](#setup)
+    - [Queries](#queries)
+      - [Basic querying (`@cypher`, `@cypherNode`)](#basic-querying-cypher-cyphernode)
+        - [`@cypher`: Cypher entry point](#cypher-cypher-entry-point)
+        - [`@cypherNode`: Traverse a relationship to another node](#cyphernode-traverse-a-relationship-to-another-node)
+        - [`@cypherRelationship`: Represent a relationship with a type](#cypherrelationship-represent-a-relationship-with-a-type)
+        - [`@cypherLinkedNodes`: Represent a linked list](#cypherlinkednodes-represent-a-linked-list)
+        - [`@cypherVirtual`: Add extra layers to the structure of returned data](#cyphervirtual-add-extra-layers-to-the-structure-of-returned-data)
+      - [`@cypherCustom`: Custom Cypher queries (only supported with APOC)](#cyphercustom-custom-cypher-queries-only-supported-with-apoc)
+        - [Mutations](#mutations)
+        - [Rules for `@cypherCustom` directives](#rules-for-cyphercustom-directives)
+      - [`@cypher` globals](#cypher-globals)
+    - [Custom Resolver Logic](#custom-resolver-logic)
+      - [Example: Authorization](#example-authorization)
+      - [Example: External Service](#example-external-service)
+    - [Generated Values](#generated-values)
+  - [Limitations](#limitations)
+  - [Inspiration](#inspiration)
+  - [Local Development](#local-development)
+    - [`npm start` or `yarn start`](#npm-start-or-yarn-start)
+    - [`npm run build` or `yarn build`](#npm-run-build-or-yarn-build)
+    - [`npm test` or `yarn test`](#npm-test-or-yarn-test)
+    - [`npm run test:integration`](#npm-run-testintegration)
 
 ## Key Features
 
@@ -435,7 +465,7 @@ const resolvers = {
 };
 ```
 
-### Example: External Service
+#### Example: External Service
 
 ```ts
 const resolvers = {
