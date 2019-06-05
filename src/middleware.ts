@@ -72,6 +72,14 @@ export const createMiddleware = (
 
   if (matchingCypherQuery) {
     runCypher = async () => {
+      /**
+       * A root query node that's virtual just returns an empty object for
+       * children to be added to.
+       */
+      if (matchingCypherQuery.kind === 'VirtualCypherQuery') {
+        return {};
+      }
+
       try {
         const cypher = buildCypher({
           fieldName: info.fieldName,

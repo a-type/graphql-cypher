@@ -43,8 +43,9 @@ type ExtractFromFieldParams = {
   schema: GraphQLSchema;
   path: string[];
   fragments: { [key: string]: FragmentDefinitionNode };
-  activeQuery: CypherQuery | undefined;
+  parentQuery: CypherQuery | undefined;
   config: ScanQueriesConfig;
+  virtualParams: any;
 };
 
 const extractQueriesFromField = ({
@@ -55,8 +56,9 @@ const extractQueriesFromField = ({
   schema,
   path,
   fragments,
-  activeQuery,
+  parentQuery,
   config,
+  virtualParams,
 }: ExtractFromFieldParams): CypherQueryFieldMap => {
   const fieldName = field.name.value;
 
@@ -71,8 +73,8 @@ const extractQueriesFromField = ({
   );
 
   // add field name to active query if not @cypherSkip
-  if (activeQuery && !skip) {
-    activeQuery.fields.push(fieldName);
+  if (parentQuery && !skip) {
+    parentQuery.fields.push(fieldName);
   }
 
   const schemaFieldDef = getFieldDef(schema, parentType, fieldName);
@@ -119,12 +121,9 @@ const extractQueriesFromField = ({
         paramNames.push('generated');
         params.generated = generatedArgs;
       }
-      if (activeQuery && activeQuery.kind === 'VirtualCypherQuery') {
+      if (virtualParams) {
         paramNames.push('virtual');
-        params.virtual = {
-          ...activeQuery.params.args,
-          ...activeQuery.params.virtual,
-        };
+        params.virtual = virtualParams;
       }
 
       const baseQueryProperties = {
@@ -250,8 +249,8 @@ const extractQueriesFromField = ({
         );
       }
 
-      if (activeQuery) {
-        activeQuery.fieldQueries[fieldName] = currentQuery;
+      if (parentQuery) {
+        parentQuery.fieldQueries[fieldName] = currentQuery;
       } else {
         queries[path.join(',')] = currentQuery;
       }
@@ -268,16 +267,78 @@ const extractQueriesFromField = ({
     return queries;
   }
 
+  /**
+   * This behavior enables Virtual queries to be used as 'root' queries. It essentially
+   * skips them in the overall query structure evaluation. To summarize, a Virtual
+   * query with no parent is also not allowed to have children. Child queries get
+   * to start a 'fresh' query tree. During evaluation, these 'single' Virtual queries
+   * will just return an empty object for their children to fill into.
+   *
+   * So, supposing your structure is like:
+   * A [Virtual]
+   * - B [Virtual]
+   *   - D [Cypher]
+   *     - F [Cypher]
+   *   - E [Cypher]
+   * - C [Cypher]
+   *   - G [Cypher]
+   *
+   * We want to end up with a query plan like:
+   * [
+   *   A,
+   *   B,
+   *   [D, [F]],
+   *   [C, [G]]
+   * ]
+   *
+   * And a final structure of:
+   *
+   * {
+   *  A: {
+   *   B: {
+   *    D: {
+   *     F
+   *    },
+   *    E
+   *   },
+   *   C: {
+   *    G
+   *   }
+   *  }
+   * }
+   */
+  let propagatedQuery = currentQuery;
+  if (
+    propagatedQuery &&
+    propagatedQuery.kind === 'VirtualCypherQuery' &&
+    !parentQuery
+  ) {
+    // by resetting the propagated query, we ensure that children
+    // will behave as if they have no parent and will generate their
+    // own distinct subqueries to be run in parallel.
+    propagatedQuery = undefined;
+  }
+
+  /**
+   * Regardless of whether we propagate the parent virtual query, we
+   * still want to propagate its parameters to the $virtual param.
+   */
+  const propagatedVirtualParams =
+    currentQuery && currentQuery.kind === 'VirtualCypherQuery'
+      ? { ...currentQuery.params.virtual, ...currentQuery.params.args }
+      : undefined;
+
   return extractQueriesFromSelectionSet({
     selectionSet: field.selectionSet,
     queries,
-    activeQuery: currentQuery,
+    parentQuery: propagatedQuery,
     parentType: currentTypeAsObjectType,
     variableValues,
     schema,
     path,
     fragments,
     config,
+    virtualParams: propagatedVirtualParams,
   });
 };
 
@@ -289,8 +350,9 @@ type ExtractFromSelectionSetParams = {
   schema: GraphQLSchema;
   path: string[];
   fragments: { [key: string]: FragmentDefinitionNode };
-  activeQuery: CypherQuery | undefined;
+  parentQuery: CypherQuery | undefined;
   config: ScanQueriesConfig;
+  virtualParams: any;
 };
 
 const extractQueriesFromSelectionSet = ({
@@ -350,8 +412,9 @@ export const extractCypherQueriesFromOperation = (
         fragments,
         path: [getNameOrAlias(field)],
         schema,
-        activeQuery: undefined,
+        parentQuery: undefined,
         config,
+        virtualParams: undefined,
       }),
     {}
   );

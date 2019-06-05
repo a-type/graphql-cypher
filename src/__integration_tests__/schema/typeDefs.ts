@@ -86,6 +86,11 @@ export default `
       )
   }
 
+  type VirtualLayer @cypherVirtual {
+    person: Person @cypher(match: "(person:Person{id: $virtual.personId})", return: "person")
+    company: Company @cypher(match: "(company:Company{id: $virtual.companyId})", return: "company")
+  }
+
   input PaginationInput {
     first: Int
     offset: Int
@@ -126,6 +131,8 @@ export default `
       )
 
     jobApplications: [JobApplication!]!
+
+    virtualLayer(personId: ID!, companyId: ID!): VirtualLayer!
   }
 
   type Mutation {

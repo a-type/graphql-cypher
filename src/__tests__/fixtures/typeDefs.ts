@@ -32,6 +32,11 @@ type PostsContainer @cypherVirtual {
   posts: [Post!]! @cypherNode(relationship: "HAS_POST", direction: OUT, where: "node.title =~ $virtual.titleMatch")
 }
 
+type VirtualLayer @cypherVirtual {
+  user: User @cypher(match: "(user:User {id: $virtual.userId})", return: "user")
+  post: Post @cypher(match: "(post:Post {id: $virtual.postId})", return: "post")
+}
+
 type User {
   id: ID!
   name: String!
@@ -85,6 +90,8 @@ type Query {
     )
 
   userSettings(id: ID!): UserSettings
+
+  virtual(userId: ID!, postId: ID!): VirtualLayer
 }
 
 type Mutation {
