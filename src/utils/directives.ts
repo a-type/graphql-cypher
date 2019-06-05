@@ -1,9 +1,4 @@
-import {
-  GraphQLObjectType,
-  ArgumentNode,
-  DirectiveNode,
-  isNamedType,
-} from 'graphql';
+import { GraphQLObjectType, ArgumentNode, DirectiveNode } from 'graphql';
 import {
   CypherConditionalStatement,
   DirectiveNames,
@@ -405,17 +400,18 @@ export const getCypherDirective = ({
     };
   } else if (directive.name.value === directiveNames.cypherLinkedNodes) {
     const relationship = extractArgumentStringValue(directive, 'relationship');
-    const direction = extractArgumentStringValue(directive, 'direction');
+    const direction =
+      extractArgumentStringValue(directive, 'direction') || 'OUT';
     const label = extractArgumentStringValue(directive, 'label');
     const where = extractArgumentStringValue(directive, 'where');
     const skip = extractArgumentStringValue(directive, 'skip');
     const limit = extractArgumentStringValue(directive, 'limit');
 
-    if (!relationship || !direction || !isRelationshipDirection(direction)) {
+    if (!relationship) {
       throw new Error(
         `A @${
           directiveNames.cypherLinkedNodes
-        } directive requires \`relationship\` and \`direction\` arguments, and \`direction\` must be "IN" or "OUT" (type: "${
+        } directive requires \`relationship\` (type: "${
           schemaType.name
         }", field: "${fieldName}")`
       );
@@ -424,7 +420,7 @@ export const getCypherDirective = ({
     return {
       kind: 'CypherLinkedNodesDirective',
       relationship,
-      direction,
+      direction: direction as RelationshipDirection,
       label,
       where,
       skip,

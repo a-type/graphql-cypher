@@ -141,8 +141,10 @@ export const getArgumentsPlusDefaults = (
 ): { [name: string]: any } => {
   const schemaType = schema.getType(parentTypeName);
 
-  if (!schemaType || !(schemaType instanceof GraphQLObjectType)) {
-    throw new Error(`Unknown or non-object type name "${parentTypeName}"`);
+  if (!schemaType || !isObjectType(schemaType)) {
+    throw new Error(
+      `Unknown or non-object type name "${parentTypeName} (type: ${schemaType})"`
+    );
   }
 
   const schemaField = schemaType.getFields()[field.name.value];
