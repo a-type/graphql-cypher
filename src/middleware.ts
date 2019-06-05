@@ -80,6 +80,7 @@ export const createMiddleware = (
           // it's not enforced in GraphQL, it's a resonable assumption that only
           // the root field of a mutation will alter the graph.
           isWrite: isWrite && isRootField,
+          hasContext: !!context.cypherContext,
         });
 
         log({

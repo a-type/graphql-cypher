@@ -81,39 +81,39 @@ describe('the middleware', () => {
     expect(neo4jDriver._mockTransaction.run).toHaveBeenCalled();
     expect(neo4jDriver._mockTransaction.run.mock.calls[0][0])
       .toMatchInlineSnapshot(`
-            "WITH $parent AS parent
-            MATCH (user:User {id: $field_user.args.id})
-            RETURN user {.name, .email, posts: [user_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
-            RETURN post
-            SKIP $args.pagination.offset
-            LIMIT $args.pagination.first\\", {args: $field_user_posts.args, parent: user}) | user_posts {.id, .title}]} AS user"
-        `);
+      "WITH $parent AS parent
+      MATCH (user:User {id: $field_user.args.id})
+      RETURN user {.name, .email, posts: [user_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH ($parent)-[:AUTHOR_OF]->(post:Post)
+      RETURN post
+      SKIP $args.pagination.offset
+      LIMIT $args.pagination.first\\", {args: $field_user_posts.args, parent: user, context: $context}) | user_posts {.id, .title}]} AS user"
+    `);
     expect(neo4jDriver._mockTransaction.run.mock.calls[0][1])
       .toMatchInlineSnapshot(`
-      Object {
-        "context": Object {
-          "foo": "bar",
-        },
-        "field_user": Object {
-          "args": Object {
-            "id": "foo",
-          },
-          "generated": undefined,
-          "virtual": undefined,
-        },
-        "field_user_posts": Object {
-          "args": Object {
-            "pagination": Object {
-              "first": 10,
-              "offset": 0,
-            },
-          },
-          "generated": undefined,
-          "virtual": undefined,
-        },
-        "parent": null,
-      }
-    `);
+            Object {
+              "context": Object {
+                "foo": "bar",
+              },
+              "field_user": Object {
+                "args": Object {
+                  "id": "foo",
+                },
+                "generated": undefined,
+                "virtual": undefined,
+              },
+              "field_user_posts": Object {
+                "args": Object {
+                  "pagination": Object {
+                    "first": 10,
+                    "offset": 0,
+                  },
+                },
+                "generated": undefined,
+                "virtual": undefined,
+              },
+              "parent": null,
+            }
+        `);
   });
 
   test('works with authorization', async () => {

@@ -45,11 +45,13 @@ const buildRelationshipField = ({
   query,
   parentName,
   namespace,
+  ...rest
 }: {
   fieldName: string;
   query: RelationshipCypherQuery;
   parentName: string;
   namespace: string;
+  hasContext: boolean;
 }) => {
   const namespacedName = `${namespace}_${fieldName}`;
   const nodeBindingName = `${namespacedName}_node`;
@@ -84,6 +86,7 @@ const buildRelationshipField = ({
       query,
       parentWasRelationship: true,
       namespace: namespacedName,
+      ...rest,
     }),
     ']',
   ].join('');
@@ -95,12 +98,14 @@ const buildNodeField = ({
   parentName,
   namespace,
   parentWasRelationship,
+  ...rest
 }: {
   fieldName: string;
   query: NodeCypherQuery;
   parentName: string;
   namespace: string;
   parentWasRelationship: boolean;
+  hasContext: boolean;
 }) => {
   const namespacedName = `${namespace}_${fieldName}`;
   const namespaceParams = createParamNamespacer(namespacedName);
@@ -137,6 +142,7 @@ const buildNodeField = ({
       query,
       parentWasRelationship: false,
       namespace: namespacedName,
+      ...rest,
     }),
     ']',
     query.returnsList ? '' : ')',
@@ -148,11 +154,13 @@ const buildVirtualField = ({
   query,
   namespace,
   parentName,
+  ...rest
 }: {
   fieldName: string;
   query: VirtualCypherQuery;
   namespace: string;
   parentName: string;
+  hasContext: boolean;
 }) => {
   return [
     `${fieldName}: `,
@@ -164,6 +172,7 @@ const buildVirtualField = ({
       // namespace is updated, since the virtual query will still
       // affect the overall query structure
       namespace: `${namespace}_${fieldName}`,
+      ...rest,
     }),
   ].join('');
 };
@@ -174,12 +183,14 @@ const buildLinkedNodesField = ({
   namespace,
   parentName,
   parentWasRelationship,
+  ...rest
 }: {
   fieldName: string;
   query: LinkedNodesCypherQuery;
   namespace: string;
   parentName: string;
   parentWasRelationship: boolean;
+  hasContext: boolean;
 }) => {
   if (parentWasRelationship) {
     throw new Error(
@@ -226,6 +237,7 @@ const buildLinkedNodesField = ({
       query,
       parentWasRelationship: false,
       namespace: namespacedName,
+      ...rest,
     }),
     ']',
     query.returnsList ? '' : ')',
@@ -241,10 +253,12 @@ const buildCustomSubqueryParams = ({
   params,
   fieldName,
   parentName,
+  hasContext,
 }: {
   params: string[];
   fieldName: string;
   parentName?: string;
+  hasContext: boolean;
 }): string => {
   const paramTuples: [string, string][] = params.map(key => [
     key,
@@ -252,6 +266,9 @@ const buildCustomSubqueryParams = ({
   ]);
   if (parentName) {
     paramTuples.push(['parent', parentName]);
+  }
+  if (hasContext) {
+    paramTuples.push(['context', '$context']);
   }
 
   return paramTuples.map(([name, value]) => `${name}: ${value}`).join(', ');
@@ -261,10 +278,12 @@ const buildCustomSubqueryClause = ({
   query,
   fieldName,
   parentName,
+  hasContext,
 }: {
   query: CustomCypherQuery;
   fieldName: string;
   parentName?: string;
+  hasContext: boolean;
 }): string => {
   const apocFn =
     'apoc.cypher.runFirstColumn' + (query.returnsList ? 'Many' : 'Single');
@@ -278,6 +297,7 @@ const buildCustomSubqueryClause = ({
       params: query.paramNames,
       fieldName,
       parentName,
+      hasContext,
     }),
     `})`,
   ].join('');
@@ -288,11 +308,13 @@ const buildCustomField = ({
   parentName,
   query,
   namespace,
+  hasContext,
 }: {
   fieldName: string;
   parentName: string;
   query: CustomCypherQuery;
   namespace: string;
+  hasContext: boolean;
 }) => {
   const namespacedName = `${namespace}_${fieldName}`;
 
@@ -304,6 +326,7 @@ const buildCustomField = ({
       query,
       fieldName: namespacedName,
       parentName,
+      hasContext,
     }),
     ` | ${namespacedName} `,
     buildFields({
@@ -311,6 +334,7 @@ const buildCustomField = ({
       parentName: namespacedName,
       parentWasRelationship: query.returnsRelationship,
       namespace: namespacedName,
+      hasContext,
     }),
     `]`,
     query.returnsList ? '' : ')',
@@ -322,11 +346,13 @@ const buildFields = ({
   parentName,
   namespace,
   parentWasRelationship,
+  hasContext,
 }: {
   query: CypherQuery;
   parentName: string;
   namespace: string;
   parentWasRelationship: boolean;
+  hasContext: boolean;
 }) => {
   if (!query.fields.length) {
     return '';
@@ -353,6 +379,7 @@ const buildFields = ({
             query: fieldQuery,
             parentWasRelationship,
             namespace,
+            hasContext,
           });
         } else if (fieldQuery.kind === 'RelationshipCypherQuery') {
           return buildRelationshipField({
@@ -360,6 +387,7 @@ const buildFields = ({
             parentName,
             query: fieldQuery,
             namespace,
+            hasContext,
           });
         } else if (fieldQuery.kind === 'CustomCypherQuery') {
           return buildCustomField({
@@ -367,6 +395,7 @@ const buildFields = ({
             parentName,
             query: fieldQuery,
             namespace,
+            hasContext,
           });
         } else if (fieldQuery.kind === 'VirtualCypherQuery') {
           return buildVirtualField({
@@ -374,6 +403,7 @@ const buildFields = ({
             query: fieldQuery,
             namespace,
             parentName,
+            hasContext,
           });
         } else if (fieldQuery.kind === 'LinkedNodesCypherQuery') {
           return buildLinkedNodesField({
@@ -382,6 +412,7 @@ const buildFields = ({
             namespace,
             parentName,
             parentWasRelationship,
+            hasContext,
           });
         }
       })
@@ -394,9 +425,11 @@ const buildFields = ({
 const buildBuilderQuery = ({
   fieldName,
   query,
+  hasContext,
 }: {
   fieldName: string;
   query: BuilderCypherQuery;
+  hasContext: boolean;
 }) => {
   // will be used to replace parameter refererences with namespaced versions,
   // like $args -> $user_posts.args
@@ -441,6 +474,7 @@ const buildBuilderQuery = ({
     parentName: query.return,
     namespace: fieldName,
     parentWasRelationship: false,
+    hasContext,
   });
   return [body, buildReturn(`${query.return} ${fields} AS ${fieldName}`)].join(
     '\n'
@@ -450,9 +484,11 @@ const buildBuilderQuery = ({
 const buildCustomWriteQuery = ({
   query,
   fieldName,
+  hasContext,
 }: {
   query: CustomCypherQuery;
   fieldName: string;
+  hasContext: boolean;
 }) => {
   const parentVariableName = '$parent';
 
@@ -464,6 +500,7 @@ const buildCustomWriteQuery = ({
       params: query.paramNames,
       parentName: parentVariableName,
       fieldName,
+      hasContext,
     }),
     `})`,
     `\n`,
@@ -477,6 +514,7 @@ const buildCustomWriteQuery = ({
       query,
       parentWasRelationship: false,
       namespace: fieldName,
+      hasContext,
     }),
     ` AS ${fieldName}`,
   ].join('');
@@ -485,9 +523,11 @@ const buildCustomWriteQuery = ({
 const buildCustomReadQuery = ({
   query,
   fieldName,
+  hasContext,
 }: {
   query: CustomCypherQuery;
   fieldName: string;
+  hasContext: boolean;
 }) => {
   const parentVariableName = '$parent';
 
@@ -497,6 +537,7 @@ const buildCustomReadQuery = ({
       query,
       parentName: parentVariableName,
       fieldName,
+      hasContext,
     }),
     query.returnsList ? ` AS x UNWIND x` : '',
     ` AS ${fieldName}`,
@@ -507,6 +548,7 @@ const buildCustomReadQuery = ({
       query,
       parentWasRelationship: false,
       namespace: fieldName,
+      hasContext,
     }),
     ` AS ${fieldName}`,
   ].join('');
@@ -516,15 +558,17 @@ const buildCustomQuery = ({
   fieldName,
   query,
   isWrite,
+  hasContext,
 }: {
   fieldName: string;
   query: CustomCypherQuery;
   isWrite: boolean;
+  hasContext: boolean;
 }) => {
   if (isWrite) {
-    return buildCustomWriteQuery({ fieldName, query });
+    return buildCustomWriteQuery({ fieldName, query, hasContext });
   } else {
-    return buildCustomReadQuery({ fieldName, query });
+    return buildCustomReadQuery({ fieldName, query, hasContext });
   }
 };
 
@@ -532,10 +576,12 @@ export const buildCypher = ({
   fieldName,
   query,
   isWrite,
+  hasContext,
 }: {
   fieldName: string;
   query: CypherQuery;
   isWrite: boolean;
+  hasContext: boolean;
 }) => {
   const safeName = safeVar(fieldName);
 
@@ -543,12 +589,14 @@ export const buildCypher = ({
     return buildBuilderQuery({
       fieldName: safeName,
       query,
+      hasContext,
     });
   } else if (query.kind === 'CustomCypherQuery') {
     return buildCustomQuery({
       fieldName: safeName,
       query,
       isWrite,
+      hasContext,
     });
   } else {
     throw new Error(
