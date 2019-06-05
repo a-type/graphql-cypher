@@ -6,7 +6,10 @@ A simple but powerful translation layer between GraphQL and Cypher.
 
 > **Note** In its current form, certain features of this library require APOC to run. See [Limitations](#limitations)
 
+## Table of Contents
+
 - [graphql-cypher](#graphql-cypher)
+  - [Table of Contents](#table-of-contents)
   - [Key Features](#key-features)
     - [🔨 Simple setup](#%F0%9F%94%A8-simple-setup)
     - [🌎 Helpful Cypher globals](#%F0%9F%8C%8E-helpful-cypher-globals)
