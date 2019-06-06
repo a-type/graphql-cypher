@@ -6,6 +6,7 @@ import {
   CustomCypherQuery,
   VirtualCypherQuery,
   LinkedNodesCypherQuery,
+  ComputedCypherQuery,
 } from '../types';
 import {
   buildNode,
@@ -175,6 +176,37 @@ const buildVirtualField = ({
       ...rest,
     }),
   ].join('');
+};
+
+const buildComputedField = ({
+  fieldName,
+  query,
+  namespace,
+  parentName,
+  ...rest
+}: {
+  fieldName: string;
+  query: ComputedCypherQuery;
+  namespace: string;
+  parentName: string;
+  hasContext: boolean;
+}) => {
+  const namespacedName = `${namespace}_${fieldName}`;
+  const namespaceParams = createParamNamespacer(namespacedName);
+
+  return [
+    `${fieldName}:`,
+    namespaceParams(query.value.replace(/parent/g, parentName)),
+    // I'm not really sure how fields would work, but see no reason to force
+    // them to be omitted here.
+    buildFields({
+      parentName: namespacedName,
+      query,
+      parentWasRelationship: false,
+      namespace: namespacedName,
+      ...rest,
+    }),
+  ].join(' ');
 };
 
 const buildLinkedNodesField = ({
@@ -412,6 +444,14 @@ const buildFields = ({
             namespace,
             parentName,
             parentWasRelationship,
+            hasContext,
+          });
+        } else if (fieldQuery.kind === 'ComputedCypherQuery') {
+          return buildComputedField({
+            fieldName,
+            query: fieldQuery,
+            namespace,
+            parentName,
             hasContext,
           });
         }

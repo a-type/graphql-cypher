@@ -19,14 +19,14 @@ import {
   getArgumentsPlusDefaults,
   isListOrWrappedListType,
   getFieldTypeName,
-} from './utils/graphql';
+} from './graphql';
 import {
   getGeneratedArgsFromDirectives,
   isCypherSkip,
   getCypherDirective,
   findCypherNodesDirectiveOnType,
   extractArgumentStringValue,
-} from './utils/directives';
+} from './directives';
 import { getFieldDef } from 'graphql/execution/execute';
 import { FieldMissingError } from './errors';
 import { DEFAULT_DIRECTIVE_NAMES, IGNORED_FIELD_NAMES } from './constants';
@@ -233,6 +233,12 @@ const extractQueriesFromField = ({
           kind: 'LinkedNodesCypherQuery',
           label,
           direction: cypherDirective.direction || 'OUT',
+        };
+      } else if (cypherDirective.kind === 'CypherComputedDirective') {
+        currentQuery = {
+          ...baseQueryProperties,
+          kind: 'ComputedCypherQuery',
+          value: cypherDirective.value,
         };
       } else {
         currentQuery = {

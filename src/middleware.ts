@@ -3,7 +3,7 @@ import {
   isRoot as getIsRootField,
   getFieldPath,
   isListOrWrappedListType,
-} from './utils/graphql';
+} from './graphql';
 import { extractCypherQueriesFromOperation } from './scanQueries';
 import { AugmentedContext, DirectiveNames } from './types';
 import { executeCypherQuery } from './executeQuery';
