@@ -419,6 +419,8 @@ The `@cypherComputed` directive can help derive data from nodes in your graph to
 
 Computed fields only support one directive argument, `value`, which is a free-form Cypher string you may supply. Use the `parent` variable as usual to reference the parent node as you write your query. Whatever you supply to `value` must only include basic Cypher operator-based computation or user functions. You may not invoke custom procedures or use any Cypher clauses, or the generated query will be invalid.
 
+You may also use `$args` or `$context` as usual when writing your value string. `$args` will reference arguments supplied to the field which you annotated with `@cypherComputed`.
+
 #### `@cypherCustom`: Custom Cypher queries (only supported with APOC)
 
 The `@cypherCustom` directive gives you full control over your Cypher query from start to finish, at the cost of performance. This feature uses APOC's custom Cypher functions under the hood, which can make queries hard for Neo4j to plan effectively. But, for complex queries that require advanced logic, it can help bridge the gap.
