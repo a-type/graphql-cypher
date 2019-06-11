@@ -80,6 +80,8 @@ export const createMiddleware = (
         return {};
       }
 
+      const session = context.neo4jDriver.session();
+
       try {
         const cypher = buildCypher({
           fieldName: info.fieldName,
@@ -104,8 +106,6 @@ export const createMiddleware = (
           contextValues: context.cypherContext,
         });
 
-        const session = context.neo4jDriver.session();
-
         log({
           title: `Running ${isWrite ? 'write' : 'read'} transaction`,
           level: 'info',
@@ -126,7 +126,6 @@ export const createMiddleware = (
           details: [JSON.stringify(data)],
         });
 
-        session.close();
         context.__graphqlCypher.resultCache[pathString] = data;
         return data;
       } catch (err) {
@@ -136,6 +135,8 @@ export const createMiddleware = (
           details: [err.toString(), (err as Error).stack],
         });
         throw err;
+      } finally {
+        session.close();
       }
     };
   } else {

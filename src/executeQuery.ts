@@ -24,7 +24,7 @@ export const executeCypherQuery = async ({
         return result.records[0].get(fieldName);
       }
     }
-    return null;
+    return isList ? [] : null;
   };
 
   if (write) {
