@@ -25,7 +25,7 @@ import {
   isNamedType,
   GraphQLType,
 } from 'graphql';
-import { FieldMissingError } from '../errors';
+import { FieldMissingError } from './errors';
 
 export function isGraphqlScalarType(
   type: GraphQLNamedType

@@ -25,6 +25,7 @@ A simple but powerful translation layer between GraphQL and Cypher.
         - [`@cypherRelationship`: Represent a relationship with a type](#cypherrelationship-represent-a-relationship-with-a-type)
         - [`@cypherLinkedNodes`: Represent a linked list](#cypherlinkednodes-represent-a-linked-list)
         - [`@cypherVirtual`: Add extra layers to the structure of returned data](#cyphervirtual-add-extra-layers-to-the-structure-of-returned-data)
+      - [`@cypherComputed`: Compute aggregated or altered field values](#cyphercomputed-compute-aggregated-or-altered-field-values)
       - [`@cypherCustom`: Custom Cypher queries (only supported with APOC)](#cyphercustom-custom-cypher-queries-only-supported-with-apoc)
         - [Mutations](#mutations)
         - [Rules for `@cypherCustom` directives](#rules-for-cyphercustom-directives)
@@ -411,6 +412,14 @@ type FriendshipEdge {
 ```
 
 There are a few new things to notice when you use virtual nodes. The first is the use of `$virtual` within the Cypher statement on the `edges` field. When you mark a type as Virtual, the parameters which were passed to the field which returned that type will be "copied" onward to child fields as the `$virtual` parameter. This is important, as it allows us to add arguments to our `friendshipsConnection` field which will then be used by the Cypher query to resolve our `edges` field within `FriendshipsConnection`. The library uses `$virtual` for this so that you can still pass in parameters directly to the `edges` field if you want, and they can all be easily differentiated and used in your final query.
+
+#### `@cypherComputed`: Compute aggregated or altered field values
+
+The `@cypherComputed` directive can help derive data from nodes in your graph to expose through your schema. For instance, suppose you stored `firstName` and `lastName` properties on a `:User` node in your graph, but wanted your GraphQL schema to have a `fullName` field. You can use `@cypherComputed(value: "parent.firstName + ' ' + parent.lastName")` to do this.
+
+Computed fields only support one directive argument, `value`, which is a free-form Cypher string you may supply. Use the `parent` variable as usual to reference the parent node as you write your query. Whatever you supply to `value` must only include basic Cypher operator-based computation or user functions. You may not invoke custom procedures or use any Cypher clauses, or the generated query will be invalid.
+
+You may also use `$args` or `$context` as usual when writing your value string. `$args` will reference arguments supplied to the field which you annotated with `@cypherComputed`.
 
 #### `@cypherCustom`: Custom Cypher queries (only supported with APOC)
 

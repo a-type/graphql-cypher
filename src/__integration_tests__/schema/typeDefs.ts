@@ -1,4 +1,4 @@
-import { directiveTypeDefs } from '../../directives';
+import { directiveTypeDefs } from '../../typeDefs';
 
 export default `
   ${directiveTypeDefs()}

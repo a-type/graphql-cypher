@@ -31,10 +31,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                        "WITH $parent AS parent
-                                                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
-                                                                                                        RETURN testUser {.id, .name} AS testUser"
-                                                                              `);
+                                                                                                                        "WITH $parent AS parent
+                                                                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
+                                                                                                                        RETURN testUser {.id, .name} AS testUser"
+                                                                                          `);
     });
 
     test('works for a basic nested query', () => {
@@ -60,10 +60,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                        "WITH $parent AS parent
-                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
-                                                                        RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts_relationship:HAS_POST]->(testUser_posts:Post) | testUser_posts {.id, .title}]} AS testUser"
-                                                      `);
+                                                                                        "WITH $parent AS parent
+                                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
+                                                                                        RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts_relationship:HAS_POST]->(testUser_posts:Post) | testUser_posts {.id, .title}]} AS testUser"
+                                                                  `);
     });
 
     test('works for a node query with a where clause', () => {
@@ -94,10 +94,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                        "WITH $parent AS parent
-                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
-                                                                        RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts_relationship:HAS_POST]->(testUser_posts:Post) WHERE testUser_posts.likes > $field_testUser_posts.args.likesGt | testUser_posts {.id, .title}]} AS testUser"
-                                                      `);
+                                                                                        "WITH $parent AS parent
+                                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
+                                                                                        RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts_relationship:HAS_POST]->(testUser_posts:Post) WHERE testUser_posts.likes > $field_testUser_posts.args.likesGt | testUser_posts {.id, .title}]} AS testUser"
+                                                                  `);
     });
 
     test('works for a deeply nested query (node queries)', () => {
@@ -146,10 +146,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                        "WITH $parent AS parent
-                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
-                                                                        RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts_relationship:HAS_POST]->(testUser_posts:Post) | testUser_posts {.id, .title, tags: [(testUser_posts)-[testUser_posts_tags_relationship:HAS_TAG]->(testUser_posts_tags:Tag) | testUser_posts_tags {.id, .name}], author: head([(testUser_posts)<-[testUser_posts_author_relationship:HAS_POST]-(testUser_posts_author:User) | testUser_posts_author {.id, .name}])}]} AS testUser"
-                                                      `);
+                                                                                        "WITH $parent AS parent
+                                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
+                                                                                        RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts_relationship:HAS_POST]->(testUser_posts:Post) | testUser_posts {.id, .title, tags: [(testUser_posts)-[testUser_posts_tags_relationship:HAS_TAG]->(testUser_posts_tags:Tag) | testUser_posts_tags {.id, .name}], author: head([(testUser_posts)<-[testUser_posts_author_relationship:HAS_POST]-(testUser_posts_author:User) | testUser_posts_author {.id, .name}])}]} AS testUser"
+                                                                  `);
     });
 
     test('works for an edge query', () => {
@@ -187,10 +187,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                "WITH $parent AS parent
-                                                                                                MATCH (testUser:User {id:$field_testUser.args.id})
-                                                                                                RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts:HAS_POST]->(testUser_posts_node:Post) | testUser_posts {.isAuthor, post: head([()-[testUser_posts:HAS_POST]->(testUser_posts_post:Post) | testUser_posts_post {.id, .title}])}]} AS testUser"
-                                                                        `);
+                                                                                                                "WITH $parent AS parent
+                                                                                                                MATCH (testUser:User {id:$field_testUser.args.id})
+                                                                                                                RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts:HAS_POST]->(testUser_posts_node:Post) | testUser_posts {.isAuthor, post: head([()-[testUser_posts:HAS_POST]->(testUser_posts_post:Post) | testUser_posts_post {.id, .title}])}]} AS testUser"
+                                                                                    `);
     });
 
     test('works for an edge query with a where clause', () => {
@@ -235,10 +235,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                "WITH $parent AS parent
-                                                                                MATCH (testUser:User {id:$field_testUser.args.id})
-                                                                                RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts:HAS_POST]->(testUser_posts_node:Post) WHERE testUser_posts.role = $field_testUser_posts.args.role AND testUser_posts_node.likes > $field_testUser_posts.args.likesGt | testUser_posts {.isAuthor, post: head([()-[testUser_posts:HAS_POST]->(testUser_posts_post:Post) | testUser_posts_post {.id, .title}])}]} AS testUser"
-                                                            `);
+                                                                                                "WITH $parent AS parent
+                                                                                                MATCH (testUser:User {id:$field_testUser.args.id})
+                                                                                                RETURN testUser {.id, .name, posts: [(testUser)-[testUser_posts:HAS_POST]->(testUser_posts_node:Post) WHERE testUser_posts.role = $field_testUser_posts.args.role AND testUser_posts_node.likes > $field_testUser_posts.args.likesGt | testUser_posts {.isAuthor, post: head([()-[testUser_posts:HAS_POST]->(testUser_posts_post:Post) | testUser_posts_post {.id, .title}])}]} AS testUser"
+                                                                        `);
     });
 
     test('works with write clauses', () => {
@@ -259,17 +259,17 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                        "WITH $parent AS parent
-                                                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
-                                                                                                        OPTIONAL MATCH (globalGroup:GlobalGroup), (deleteMe:DeleteMe)
-                                                                                                        MERGE (globalGroup)-[:HAS_USER]->(testUser)
-                                                                                                        SET testUser.name = $field_testUser.args.input.name
-                                                                                                        SET testUser.age = $field_testUser.args.input.age
-                                                                                                        DELETE deleteMe
-                                                                                                        DETACH DELETE deleteMe
-                                                                                                        REMOVE testUser.pending
-                                                                                                        RETURN testUser {.id, .name} AS testUser"
-                                                                              `);
+                                                                                                                        "WITH $parent AS parent
+                                                                                                                        MATCH (testUser:User {id:$field_testUser.args.id})
+                                                                                                                        OPTIONAL MATCH (globalGroup:GlobalGroup), (deleteMe:DeleteMe)
+                                                                                                                        MERGE (globalGroup)-[:HAS_USER]->(testUser)
+                                                                                                                        SET testUser.name = $field_testUser.args.input.name
+                                                                                                                        SET testUser.age = $field_testUser.args.input.age
+                                                                                                                        DELETE deleteMe
+                                                                                                                        DETACH DELETE deleteMe
+                                                                                                                        REMOVE testUser.pending
+                                                                                                                        RETURN testUser {.id, .name} AS testUser"
+                                                                                          `);
     });
 
     test('works with virtual fields', () => {
@@ -304,10 +304,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                "WITH $parent AS parent
-                                                MATCH (testUser:User {id:$field_testUser.args.id})
-                                                RETURN testUser {.id, .name, virtualPosts: {posts: [(testUser)-[testUser_virtualPosts_posts_relationship:HAS_POST]->(testUser_virtualPosts_posts:Post) | testUser_virtualPosts_posts {.id, .title}]}} AS testUser"
-                                    `);
+                                                                "WITH $parent AS parent
+                                                                MATCH (testUser:User {id:$field_testUser.args.id})
+                                                                RETURN testUser {.id, .name, virtualPosts: {posts: [(testUser)-[testUser_virtualPosts_posts_relationship:HAS_POST]->(testUser_virtualPosts_posts:Post) | testUser_virtualPosts_posts {.id, .title}]}} AS testUser"
+                                                `);
     });
 
     test('works with linked node fields', () => {
@@ -333,10 +333,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                "WITH $parent AS parent
-                MATCH (testUser:User {id:$field_testUser.args.id})
-                RETURN testUser {.id, .name, posts: head([(testUser)-[:HAS_POST*]->(testUser_posts:Post) | testUser_posts {.id, .title}])} AS testUser"
-            `);
+                                "WITH $parent AS parent
+                                MATCH (testUser:User {id:$field_testUser.args.id})
+                                RETURN testUser {.id, .name, posts: head([(testUser)-[:HAS_POST*]->(testUser_posts:Post) | testUser_posts {.id, .title}])} AS testUser"
+                        `);
     });
 
     test('works with linked node fields', () => {
@@ -371,10 +371,68 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
+                                "WITH $parent AS parent
+                                MATCH (testUser:User {id:$field_testUser.args.id})
+                                RETURN testUser {.id, .name, posts: head([(testUser)-[:HAS_POST*5..15]->(testUser_posts:Post) | testUser_posts {.id, .title}])} AS testUser"
+                        `);
+    });
+
+    test('works with computed fields', () => {
+      const fieldName = 'testUser';
+      const query: BuilderCypherQuery = {
+        ...defaultBuilder,
+        fields: ['id', 'fullName'],
+        fieldQueries: {
+          fullName: {
+            kind: 'ComputedCypherQuery',
+            value: "parent.firstName + ' ' + parent.lastName",
+            returnsList: false,
+            paramNames: [],
+            params: {},
+            fields: [],
+            fieldQueries: {},
+          },
+        },
+      };
+
+      expect(
+        buildCypher({ fieldName, query, isWrite: false, hasContext: false })
+      ).toMatchInlineSnapshot(`
                 "WITH $parent AS parent
                 MATCH (testUser:User {id:$field_testUser.args.id})
-                RETURN testUser {.id, .name, posts: head([(testUser)-[:HAS_POST*5..15]->(testUser_posts:Post) | testUser_posts {.id, .title}])} AS testUser"
+                RETURN testUser {.id, fullName: testUser.firstName + ' ' + testUser.lastName } AS testUser"
             `);
+    });
+
+    test('works with computed fields with args', () => {
+      const fieldName = 'testUser';
+      const query: BuilderCypherQuery = {
+        ...defaultBuilder,
+        fields: ['id', 'name'],
+        fieldQueries: {
+          name: {
+            kind: 'ComputedCypherQuery',
+            value: 'coalesce(parent.name, $args.defaultName)',
+            returnsList: false,
+            paramNames: ['args'],
+            params: {
+              args: {
+                defaultName: 'foo',
+              },
+            },
+            fields: [],
+            fieldQueries: {},
+          },
+        },
+      };
+
+      expect(
+        buildCypher({ fieldName, query, isWrite: false, hasContext: false })
+      ).toMatchInlineSnapshot(`
+        "WITH $parent AS parent
+        MATCH (testUser:User {id:$field_testUser.args.id})
+        RETURN testUser {.id, name: coalesce(testUser.name, $field_testUser_name.args.defaultName) } AS testUser"
+      `);
     });
   });
 
@@ -395,9 +453,9 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User) RETURN user\\", {parent: $parent}) AS testUser
-                                                                                                        RETURN testUser {.id, .name} AS testUser"
-                                                                              `);
+                                                                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User) RETURN user\\", {parent: $parent}) AS testUser
+                                                                                                                        RETURN testUser {.id, .name} AS testUser"
+                                                                                          `);
     });
 
     test('works for a nested field query', () => {
@@ -427,9 +485,9 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User) RETURN user\\", {parent: $parent}) AS testUser
-                                                                                                        RETURN testUser {.id, posts: [testUser_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post\\", {parent: testUser}) | testUser_posts {.id, .title}]} AS testUser"
-                                                                              `);
+                                                                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User) RETURN user\\", {parent: $parent}) AS testUser
+                                                                                                                        RETURN testUser {.id, posts: [testUser_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post\\", {parent: testUser}) | testUser_posts {.id, .title}]} AS testUser"
+                                                                                          `);
     });
 
     test('works for a deeply nested field query', () => {
@@ -470,9 +528,9 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: true })
       ).toMatchInlineSnapshot(`
-        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User) RETURN user\\", {parent: $parent, context: $context}) AS testUser
-        RETURN testUser {.id, posts: [testUser_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post\\", {parent: testUser, context: $context}) | testUser_posts {.id, .title, tags: [testUser_posts_tags IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:HAS_TAG]->(tag:Tag) RETURN tag\\", {parent: testUser_posts, context: $context}) | testUser_posts_tags {.id, .name}]}]} AS testUser"
-      `);
+                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User) RETURN user\\", {parent: $parent, context: $context}) AS testUser
+                        RETURN testUser {.id, posts: [testUser_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post\\", {parent: testUser, context: $context}) | testUser_posts {.id, .title, tags: [testUser_posts_tags IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:HAS_TAG]->(tag:Tag) RETURN tag\\", {parent: testUser_posts, context: $context}) | testUser_posts_tags {.id, .name}]}]} AS testUser"
+                  `);
     });
 
     test('works with params', () => {
@@ -495,9 +553,9 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User{id: $args.id}) RETURN user\\", {args: $field_testUser.args, parent: $parent}) AS testUser
-                                                                                                        RETURN testUser {.id, .name} AS testUser"
-                                                                              `);
+                                                                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User{id: $args.id}) RETURN user\\", {args: $field_testUser.args, parent: $parent}) AS testUser
+                                                                                                                        RETURN testUser {.id, .name} AS testUser"
+                                                                                          `);
     });
 
     test('works with nested params', () => {
@@ -532,9 +590,9 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User) RETURN user\\", {parent: $parent}) AS testUser
-                                                                                                        RETURN testUser {.id, posts: [testUser_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post LIMIT $args.limit\\", {args: $field_testUser_posts.args, parent: testUser}) | testUser_posts {.id, .title}]} AS testUser"
-                                                                              `);
+                                                                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User) RETURN user\\", {parent: $parent}) AS testUser
+                                                                                                                        RETURN testUser {.id, posts: [testUser_posts IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:AUTHOR_OF]->(post:Post) RETURN post LIMIT $args.limit\\", {args: $field_testUser_posts.args, parent: testUser}) | testUser_posts {.id, .title}]} AS testUser"
+                                                                                          `);
     });
 
     test('works with top-level list field', () => {
@@ -553,9 +611,9 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                        "WITH apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (post:Post) RETURN post\\", {parent: $parent}) AS x UNWIND x AS testPosts
-                                                                                                        RETURN testPosts {.id, .title} AS testPosts"
-                                                                              `);
+                                                                                                                        "WITH apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (post:Post) RETURN post\\", {parent: $parent}) AS x UNWIND x AS testPosts
+                                                                                                                        RETURN testPosts {.id, .title} AS testPosts"
+                                                                                          `);
     });
 
     test('works with a write query', () => {
@@ -578,10 +636,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: true, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                        "CALL apoc.cypher.doIt(\\"WITH $parent as parent CREATE (user:User{name: $args.name}) RETURN user\\", {args: $field_testCreateUser.args, parent: $parent})
-                                                                                                        YIELD value WITH apoc.map.values(value, [keys(value)[0]])[0] AS \`testCreateUser\`
-                                                                                                        RETURN testCreateUser {.name} AS testCreateUser"
-                                                                              `);
+                                                                                                                        "CALL apoc.cypher.doIt(\\"WITH $parent as parent CREATE (user:User{name: $args.name}) RETURN user\\", {args: $field_testCreateUser.args, parent: $parent})
+                                                                                                                        YIELD value WITH apoc.map.values(value, [keys(value)[0]])[0] AS \`testCreateUser\`
+                                                                                                                        RETURN testCreateUser {.name} AS testCreateUser"
+                                                                                          `);
     });
 
     test('works with a nested write query', () => {
@@ -615,10 +673,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ fieldName, query, isWrite: true, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                                                        "CALL apoc.cypher.doIt(\\"WITH $parent as parent CREATE (user:User{name: $args.name}) RETURN user\\", {args: $field_testCreateUser.args, parent: $parent})
-                                                                                                        YIELD value WITH apoc.map.values(value, [keys(value)[0]])[0] AS \`testCreateUser\`
-                                                                                                        RETURN testCreateUser {.name, group: head([testCreateUser_group IN apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (parent)-[:BELONGS_TO]->(group:Group) RETURN group\\", {parent: testCreateUser}) | testCreateUser_group {.id, .name}])} AS testCreateUser"
-                                                                              `);
+                                                                                                                        "CALL apoc.cypher.doIt(\\"WITH $parent as parent CREATE (user:User{name: $args.name}) RETURN user\\", {args: $field_testCreateUser.args, parent: $parent})
+                                                                                                                        YIELD value WITH apoc.map.values(value, [keys(value)[0]])[0] AS \`testCreateUser\`
+                                                                                                                        RETURN testCreateUser {.name, group: head([testCreateUser_group IN apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (parent)-[:BELONGS_TO]->(group:Group) RETURN group\\", {parent: testCreateUser}) | testCreateUser_group {.id, .name}])} AS testCreateUser"
+                                                                                          `);
     });
   });
 
@@ -662,9 +720,9 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ query, fieldName, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User {id: $args.id}) RETURN user\\", {args: $field_testUser.args, parent: $parent}) AS testUser
-                                                                        RETURN testUser {.id, posts: [(testUser)-[testUser_posts_relationship:HAS_POST]->(testUser_posts:Post) | testUser_posts {.id, .title, tags: [testUser_posts_tags IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:HAS_TAG]->(tag:Tag)\\", {parent: testUser_posts}) | testUser_posts_tags {.id, .name}]}]} AS testUser"
-                                                      `);
+                                                                                        "WITH apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (user:User {id: $args.id}) RETURN user\\", {args: $field_testUser.args, parent: $parent}) AS testUser
+                                                                                        RETURN testUser {.id, posts: [(testUser)-[testUser_posts_relationship:HAS_POST]->(testUser_posts:Post) | testUser_posts {.id, .title, tags: [testUser_posts_tags IN apoc.cypher.runFirstColumnMany(\\"WITH $parent as parent MATCH (parent)-[:HAS_TAG]->(tag:Tag)\\", {parent: testUser_posts}) | testUser_posts_tags {.id, .name}]}]} AS testUser"
+                                                                  `);
     });
 
     test('works starting from builder', () => {
@@ -712,10 +770,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ query, fieldName, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                                                "WITH $parent AS parent
-                                                                MATCH (user:User {id: $field_testUser.args.id})
-                                                                RETURN user {.id, posts: head([testUser_posts IN apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (parent)-[:HAS_POST]->(post:Post)\\", {parent: user}) | testUser_posts {.id, tags: [(testUser_posts)-[testUser_posts_tags_relationship:HAS_TAG]->(testUser_posts_tags:Tag) | testUser_posts_tags {.id, .name}]}])} AS testUser"
-                                                `);
+                                                                                "WITH $parent AS parent
+                                                                                MATCH (user:User {id: $field_testUser.args.id})
+                                                                                RETURN user {.id, posts: head([testUser_posts IN apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (parent)-[:HAS_POST]->(post:Post)\\", {parent: user}) | testUser_posts {.id, tags: [(testUser_posts)-[testUser_posts_tags_relationship:HAS_TAG]->(testUser_posts_tags:Tag) | testUser_posts_tags {.id, .name}]}])} AS testUser"
+                                                            `);
     });
 
     test('works with custom queries returning relationships', () => {
@@ -763,10 +821,10 @@ describe('cypher query builder', () => {
       expect(
         buildCypher({ query, fieldName, isWrite: false, hasContext: false })
       ).toMatchInlineSnapshot(`
-                                "WITH $parent AS parent
-                                MATCH (user:User)
-                                RETURN user {.id, .name, friendships: head([testUser_friendships IN apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (parent)-[rel:HAS_FRIEND]->(:User) RETURN rel\\", {args: $field_testUser_friendships.args, parent: user}) | testUser_friendships {.id, node: [()-[testUser_friendships:HAS_FRIEND]->(testUser_friendships_node:User) | testUser_friendships_node {.id, .name}]}])} AS testUser"
-                        `);
+                                                "WITH $parent AS parent
+                                                MATCH (user:User)
+                                                RETURN user {.id, .name, friendships: head([testUser_friendships IN apoc.cypher.runFirstColumnSingle(\\"WITH $parent as parent MATCH (parent)-[rel:HAS_FRIEND]->(:User) RETURN rel\\", {args: $field_testUser_friendships.args, parent: user}) | testUser_friendships {.id, node: [()-[testUser_friendships:HAS_FRIEND]->(testUser_friendships_node:User) | testUser_friendships_node {.id, .name}]}])} AS testUser"
+                                    `);
     });
   });
 });

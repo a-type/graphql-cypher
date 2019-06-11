@@ -9,6 +9,7 @@ export const DEFAULT_DIRECTIVE_NAMES: DirectiveNames = {
   cypherRelationship: 'cypherRelationship',
   cypherVirtual: 'cypherVirtual',
   cypherLinkedNodes: 'cypherLinkedNodes',
+  cypherComputed: 'cypherComputed',
 };
 
 export const IGNORED_FIELD_NAMES = ['__typename', '__schema', '__type'];
