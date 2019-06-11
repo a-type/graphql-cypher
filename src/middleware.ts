@@ -104,7 +104,7 @@ export const createMiddleware = (
           contextValues: context.cypherContext,
         });
 
-        const session = context.neo4jDriver.session(isWrite ? 'WRITE' : 'READ');
+        const session = context.neo4jDriver.session();
 
         log({
           title: `Running ${isWrite ? 'write' : 'read'} transaction`,

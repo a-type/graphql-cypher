@@ -15,11 +15,7 @@ export const executeCypherQuery = async ({
   isList: boolean;
   write?: boolean;
 }): Promise<any> => {
-  const transaction = write
-    ? session.writeTransaction.bind(session)
-    : session.readTransaction.bind(session);
-
-  const data = await transaction(async (tx: v1.Transaction) => {
+  const work = async (tx: v1.Transaction) => {
     const result = await tx.run(cypher, variables);
     if (result.records && result.records.length) {
       if (isList) {
@@ -29,7 +25,11 @@ export const executeCypherQuery = async ({
       }
     }
     return null;
-  });
+  };
 
-  return data;
+  if (write) {
+    return await session.writeTransaction(work);
+  } else {
+    return await session.readTransaction(work);
+  }
 };
