@@ -4,14 +4,14 @@ export const executeCypherQuery = async ({
   fieldName,
   cypher,
   variables,
-  session,
+  driver,
   write = false,
   isList,
 }: {
   fieldName: string;
   cypher: string;
   variables: { [name: string]: any };
-  session: v1.Session;
+  driver: v1.Driver;
   isList: boolean;
   write?: boolean;
 }): Promise<any> => {
@@ -27,9 +27,18 @@ export const executeCypherQuery = async ({
     return isList ? [] : null;
   };
 
-  if (write) {
-    return await session.writeTransaction(work);
-  } else {
-    return await session.readTransaction(work);
+  const session = driver.session();
+  let result;
+
+  try {
+    if (write) {
+      result = await session.writeTransaction(work);
+    } else {
+      result = await session.readTransaction(work);
+    }
+  } finally {
+    session.close();
   }
+
+  return result;
 };

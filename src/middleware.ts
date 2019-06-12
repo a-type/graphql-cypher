@@ -80,9 +80,6 @@ export const createMiddleware = (
         return {};
       }
 
-      const session = context.neo4jDriver.session();
-      let data;
-
       try {
         const cypher = buildCypher({
           fieldName: info.fieldName,
@@ -113,11 +110,11 @@ export const createMiddleware = (
           details: [cypher, 'Parameters:', JSON.stringify(cypherVariables)],
         });
 
-        data = await executeCypherQuery({
+        const data = await executeCypherQuery({
           cypher,
           fieldName: info.fieldName,
           variables: cypherVariables,
-          session,
+          driver: context.neo4jDriver,
           isList: isListOrWrappedListType(info.returnType),
         });
 
@@ -127,7 +124,7 @@ export const createMiddleware = (
           details: [JSON.stringify(data)],
         });
 
-        context.__graphqlCypher.resultCache[pathString] = data;
+        return data;
       } catch (err) {
         log({
           title: 'Execution error',
@@ -135,11 +132,7 @@ export const createMiddleware = (
           details: [err.toString(), (err as Error).stack],
         });
         throw err;
-      } finally {
-        session.close();
       }
-
-      return data;
     };
   } else {
     runCypher = async (providedArgs, providedContext, providedInfo) => {
