@@ -116,6 +116,7 @@ export const createMiddleware = (
           variables: cypherVariables,
           driver: context.neo4jDriver,
           isList: isListOrWrappedListType(info.returnType),
+          isWrite,
         });
 
         log({

@@ -5,7 +5,7 @@ export const executeCypherQuery = async ({
   cypher,
   variables,
   driver,
-  write = false,
+  isWrite,
   isList,
 }: {
   fieldName: string;
@@ -13,7 +13,7 @@ export const executeCypherQuery = async ({
   variables: { [name: string]: any };
   driver: v1.Driver;
   isList: boolean;
-  write?: boolean;
+  isWrite: boolean;
 }): Promise<any> => {
   const work = async (tx: v1.Transaction) => {
     const result = await tx.run(cypher, variables);
@@ -31,7 +31,7 @@ export const executeCypherQuery = async ({
   let result;
 
   try {
-    if (write) {
+    if (isWrite) {
       result = await session.writeTransaction(work);
     } else {
       result = await session.readTransaction(work);
